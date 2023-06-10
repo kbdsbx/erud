@@ -22,7 +22,7 @@ This is a tiny machine learning framework, but I don't know for sure as what it 
     
     组图阶段只存储“操作”，留一个或者两个缓存单位空着，正向传播的时候顺便计算要反向传播的变量，然后存在单位里，等反向传播的时候取出来用
 
-    * 基本二元操作
+    * 基本二元运算
         * 加
         * 减
         * 乘
@@ -104,3 +104,36 @@ This is a tiny machine learning framework, but I don't know for sure as what it 
 
 
 > 第一阶段就是构建整个计算图，增加简单四则运算作为操作节点，然后完成前向和反向传播。测试用例要包括变量、向量和张量，其中验证功能可以放在最后加
+
+### 命令和接口
+
+单元测试
+```bush
+> .\test.bat
+```
+
+计算图的使用接口（目前的接口）
+
+引入
+```python
+from erud.graph import ComputationGraph as graph
+from erud.node import ComputationNode as node
+```
+
+新建节点
+```python
+n1 = node()
+n2 = node()
+```
+
+插入节点
+```python
+g = graph()
+g.insertNode(n1)
+g.insertNode(n2)
+```
+
+添加边
+```python
+g.addEdge(n1, n2)
+```
