@@ -4,11 +4,11 @@ class ComputationNode :
     #### 数据域
     info : None
 
-    #### 前向传播
-    fFristEdge : "edge.ComputationEdge" = None
+    #### 前向传播路径
+    fFirstEdge : "edge.ComputationEdge" = None
     
-    #### 反向传播
-    bFristEdge : "edge.ComputationEdge" = None
+    #### 反向传播路径
+    bFirstEdge : "edge.ComputationEdge" = None
 
     def __init__ (self, paylaod = None) :
         self.info = paylaod
