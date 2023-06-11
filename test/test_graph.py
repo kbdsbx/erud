@@ -1,6 +1,6 @@
-from erud.graph import ComputationGraph as graph
-from erud.node import ComputationNode as node
-from erud.errors import *
+from erud.cg.graph import ComputationGraph as graph
+from erud.cg.node import ComputationNode as node
+from erud.cg.errors import *
 
 import pytest
 
@@ -42,10 +42,10 @@ def test_graph_add_edge() :
     n3 = node(3)
     n4 = node(4)
 
-    assert n1.info == 1
-    assert n2.info == 2
-    assert n3.info == 3
-    assert n4.info == 4
+    assert n1.data == 1
+    assert n2.data == 2
+    assert n3.data == 3
+    assert n4.data == 4
 
     g.insertNode(n1)
     g.insertNode(n2)
@@ -56,13 +56,13 @@ def test_graph_add_edge() :
 
     g.addEdge(n1, n3)
 
-    assert n1.fFirstEdge.fNode.info == n3.info
+    assert n1.fFirstEdge.fNode.data == n3.data
     assert n1.fFirstEdge.fNode is n3
-    assert n1.fFirstEdge.bNode.info == n1.info
+    assert n1.fFirstEdge.bNode.data == n1.data
     assert n1.fFirstEdge.bNode is n1
-    assert n3.bFirstEdge.bNode.info == n1.info
+    assert n3.bFirstEdge.bNode.data == n1.data
     assert n3.bFirstEdge.bNode is n1
-    assert n3.bFirstEdge.fNode.info == n3.info
+    assert n3.bFirstEdge.fNode.data == n3.data
     assert n3.bFirstEdge.fNode is n3
 
     g.addEdge(n1, n4)

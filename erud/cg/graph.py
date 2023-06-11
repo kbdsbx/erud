@@ -1,6 +1,6 @@
-from erud.edge import ComputationEdge as edge
-from erud.node import ComputationNode as node
-from erud.errors import *
+from erud.cg.edge import ComputationEdge as edge
+from erud.cg.node import ComputationNode as node
+from erud.cg.errors import *
 
 # 计算图
 # 使用十字链表存储
@@ -159,15 +159,15 @@ class ComputationGraph:
     def __str__ (self) :
         str = "\n"
         for node in self.__nodes :
-            str += "| %s |\t" %(node.info)
+            str += "| %s |\t" %(node.data)
             p = node.fFirstEdge
             while p != None:
-                str += "[->%s] " %(p.fNode.info)
+                str += "[->%s] " %(p.fNode.data)
                 p = p.fNextEdge
 
             p = node.bFirstEdge
             while p != None:
-                str += "[<-%s] " %(p.bNode.info)
+                str += "[<-%s] " %(p.bNode.data)
                 p = p.bNextEdge
 
             str += "\n"

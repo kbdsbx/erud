@@ -1,4 +1,4 @@
-import erud.node as node
+import erud.cg.node as node
 
 # 计算图的边
 # 从数据结构来讲，fNode是出度，bNode是入度

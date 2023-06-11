@@ -1,8 +1,9 @@
-import erud.edge as edge
+import erud.cg.edge as edge
+from erud.cg.payload import payload
 
 class ComputationNode :
     #### 数据域
-    info : None
+    data : payload = None
 
     #### 前向传播路径
     fFirstEdge : "edge.ComputationEdge" = None
@@ -10,11 +11,11 @@ class ComputationNode :
     #### 反向传播路径
     bFirstEdge : "edge.ComputationEdge" = None
 
-    def __init__ (self, paylaod = None) :
-        self.info = paylaod
+    def __init__ (self, pl = None) :
+        self.data = pl
 
     def __str__(self) :
-        if self.info == None :
+        if self.data == None :
             return ""
         else :
-            return self.info
+            return self.data
