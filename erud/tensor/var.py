@@ -3,6 +3,14 @@ import numpy as np
 
 class var (payload) :
     __data : any = None
+        
+    @property
+    def data (self) -> any :
+        return self.__data
+    
+    # 变量赋值
+    def setData(self, d) :
+        self.__data = d
 
     def __init__ (self, d) :
         self.__data = d
@@ -12,7 +20,11 @@ class var (payload) :
     def fprop(self) -> any:
         return self.__data
 
-    # 反向传播时，对当前变量求导值为单位张量
-    def bprop(self, values) -> any:
-        return np.sum(values)
+    # 反向传播时，dz/dc = 0
+    def bprop(self, dz = 0) -> any:
+        if ( isinstance(self.__data, np.ndarray) ) :
+            return np.zeros_like(self.__data)
+        else :
+            return 0
+    
 
