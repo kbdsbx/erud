@@ -16,7 +16,7 @@ class ComputationGraph:
         return len(self.__nodes)
     
     # 增加节点
-    def insertNode(self, node):
+    def insertNode(self, node : node):
         for _n in self.__nodes :
             if _n is node :
                 raise NodeRepeatError('This node is exists.')

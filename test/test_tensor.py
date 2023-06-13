@@ -9,7 +9,7 @@ def test_variable () :
     assert v1.fprop() == 5
     assert v1.bprop(7) == 0
 
-    v1.setData(7)
+    v1.data = 7
 
     assert v1.fprop() == 7
 

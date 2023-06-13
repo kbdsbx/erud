@@ -29,7 +29,7 @@ def broadcast_axis(z : np.ndarray , x : np.ndarray) :
 # 缩小dx的维度使其与x的维度相同
 # dx: dz/dx，即dz对dx的偏导数
 # x: 原操作数
-# return: dtype or np.ndarry 导数
+# return: scalar or np.ndarry 与x维度相同的dx
 def partial_sum(dx : any, x : any) -> any:
     if isinstance(x, np.ndarray) :
         # 如果x的维度和dx不一样，说明x在z = f(x,...)的运算中发生了广播

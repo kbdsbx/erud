@@ -11,7 +11,7 @@ class ComputationNode :
     #### 反向传播路径
     bFirstEdge : "edge.ComputationEdge" = None
 
-    def __init__ (self, pl = None) :
+    def __init__ (self, pl : payload = None) :
         self.data = pl
 
     def __str__(self) :

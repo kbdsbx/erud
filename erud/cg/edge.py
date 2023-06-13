@@ -1,4 +1,5 @@
 import erud.cg.node as node
+from erud.cg.node import payload
 
 # 计算图的边
 # 从数据结构来讲，fNode是出度，bNode是入度
@@ -17,8 +18,10 @@ class ComputationEdge :
     # 下一条边
     bNextEdge : "ComputationEdge" = None
 
-    # 边信息
-    weight = None
+    # 运载
+    # 正在计算的节点会从上一层边中一次性取得所有运载并进行计算
+    # 已计算完成的节点会将值分发给下一层中所有边的运载
+    carry : any = None
 
     def __init__(self, nodeX : node.ComputationNode, nodeY : node.ComputationNode) :
         self.fNode = nodeY

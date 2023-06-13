@@ -5,6 +5,7 @@ from erud.opts.div import div
 import numpy as np
 import pytest as test
 
+# 加法
 def test_operator_add () :
     opt = add()
 
@@ -185,3 +186,59 @@ def test_operator_add () :
        [[[32, 17,  8, 14, 24]],
         [[19, 12, 21, 13, 17]],
         [[20, 17, 16, 12, 21]]]]))
+
+# 乘法
+def test_operator_mul () :
+    opt = mul()
+
+    # 数乘数
+    x = 3
+    y = 6
+    z = opt.fprop(x, y)
+
+    assert z == 18
+
+    # 数乘矩阵
+    x = np.array([[2,1], [3,4]])
+    y = 5
+
+    z = opt.fprop(x, y)
+
+    assert z.shape == (2, 2)
+    assert np.all(z == np.array([[10, 5], [15, 20]]))
+
+    # 张量shape(1,2,2)乘张量shape(3,1,2)
+    x = np.array([[[2, 2],
+        [2, 8]]])
+    y = np.array([[[7, 7]],
+       [[2, 9]],
+       [[7, 9]]])
+    
+    z = opt.fprop(x, y)
+
+    assert z.shape == (3,2,2)
+    assert np.all(z == np.array([[[14, 14],
+        [14, 56]],
+       [[ 4, 18],
+        [ 4, 72]],
+       [[14, 18],
+        [14, 72]]]))
+    
+    dz = np.array([[[8, 1],
+        [1, 7]],
+       [[5, 1],
+        [2, 8]],
+       [[2, 9],
+        [0, 1]]])
+    
+    # 反向传播
+    dx, dy = opt.bprop(dz)
+
+    assert dx.shape == x.shape
+    assert dy.shape == y.shape
+    assert np.all(dx == np.array([[[ 80,  97],
+        [ 11, 130]]]))
+    assert np.all(dy == np.array([[[18, 58]],
+       [[14, 66]],
+       [[ 4, 26]]]))
+

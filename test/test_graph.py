@@ -72,7 +72,7 @@ def test_graph_add_edge() :
     assert n4.bFirstEdge.bNode is n1
     assert n4.bFirstEdge.fNode is n4
 
-    print(g)
+    # print(g)
 
 # 添加边时如果相对应的节点不存在则抛出异常
 def test_graph_raise_unfind_node() :
@@ -114,7 +114,7 @@ def test_graph_raise_unfind_node() :
         # 重复添加n2->n6的边
         g.addEdge(n2, n6)
     
-    print(g)
+    # print(g)
 
 
 # 删除边
@@ -155,7 +155,7 @@ def test_graph_remove_edge() :
     assert n5.bFirstEdge.bNode is n1
     assert n5.bFirstEdge.fNode is n5
 
-    print(g)
+    # print(g)
 
 
 # 删除不存在的边抛出异常
@@ -228,7 +228,7 @@ def test_graph_remove_node () :
     assert n2.fFirstEdge.fNextEdge.fNode is n6
     assert n6.bFirstEdge.bNextEdge is None
 
-    print(g)
+    # print(g)
 
     with pytest.raises(NodeNotFindError) :
         # 删除不存在的节点

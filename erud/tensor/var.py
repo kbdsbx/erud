@@ -9,7 +9,8 @@ class var (payload) :
         return self.__data
     
     # 变量赋值
-    def setData(self, d) :
+    @data.setter
+    def data(self, d) :
         self.__data = d
 
     def __init__ (self, d) :

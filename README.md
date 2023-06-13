@@ -109,6 +109,11 @@ This is a tiny machine learning framework, but I don't know for sure as what it 
 
 > 第一阶段就是构建整个计算图，增加简单四则运算作为操作节点，然后完成前向和反向传播。测试用例要包括变量、向量和张量，其中验证功能可以放在最后加
 
+
+计算图节点node含有属性data，类型为payload，所有张量类和操作符类都继承自payload，并实现fprop方法和bprop方法，其中fprop会在计算图执行前向传播时陆续调用，bprop会在执行反向传播时调用。
+
+计算图边edge含有属性carry，类型为标量、向量、矩阵或张量，正在计算的节点会从入度边中一次性取得所有运载并进行计算，已计算完成的节点node会将值分发给出度中所有边的运载
+
 ### 命令和接口
 
 单元测试
@@ -120,8 +125,8 @@ This is a tiny machine learning framework, but I don't know for sure as what it 
 
 引入
 ```python
-from erud.graph import ComputationGraph as graph
-from erud.node import ComputationNode as node
+from erud.cg.graph import ComputationGraph as graph
+from erud.cg.node import ComputationNode as node
 ```
 
 新建节点
@@ -150,3 +155,5 @@ g.removeEdge(n1, n2)
 
 1. 计算图的添加删除节点
 2. 计算图的添加删除边
+3. 张量负载：常量、变量
+4. 二元操作负载：加、减、乘、除
