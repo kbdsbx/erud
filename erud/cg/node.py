@@ -11,6 +11,14 @@ class ComputationNode :
     #### 反向传播路径
     bFirstEdge : "edge.ComputationEdge" = None
 
+    # 计算前向传播
+    def fprop(self, *args) :
+        return self.data.fprop(*args)
+    
+    # 计算反向传播
+    def bprop(self, *args) :
+        return self.data.bprop(*args)
+
     def __init__ (self, pl : payload = None) :
         self.data = pl
 

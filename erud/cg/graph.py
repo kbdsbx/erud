@@ -22,6 +22,7 @@ class ComputationGraph:
                 raise NodeRepeatError('This node is exists.')
         self.__nodes.append(node)
 
+
     # 增加边
     def addEdge(self, nodeX : node, nodeY : node):
         try :
@@ -59,6 +60,7 @@ class ComputationGraph:
             else :
                 _y_edge.bNextEdge = _insert_edge
     
+
     # 删除节点
     def removeNode(self, node : node):
         try :
@@ -154,6 +156,84 @@ class ComputationGraph:
                 _y_edge = _y_edge.bNextEdge
             else :
                 raise EdgeNotFindError('Can not find edge in computation graph.')
+
+
+    # 针对前向传播
+    # 获得子图中入度为0的点（源点）
+    # 如果点的入边数为零，或所有入边都有负载，则此点入度为0
+    def _getStartingNodeInForwardPropagation(self, nodes) -> list(node):
+        res = []
+        for n in nodes:
+            p = n.bFirstEdge
+            while p is not None:
+                # 如果此入边的负载存在，则边不计入入度
+                if p.carry is not None :
+                    p = p.bNextEdge
+                # 如果此入边的负载不存在，则计入入度，此点的入度大于零
+                else :
+                    break
+            else :
+                res.append(n)
+
+        return res
+    
+
+    # 针对前向传播
+    # 获得子图中出度为0的点（汇点）
+    def _getEndedNodeInForwardPropagation(self, nodes) -> list(node) :
+        res = []
+        for n in nodes:
+            if n.fFirstEdge is None :
+                res.append(n)
+        
+        return res
+
+
+
+    # 前向传播
+    # 此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
+    def fprop (self) :
+        # 还未计算的节点
+        apply_node = self.__nodes
+
+        # 从还未计算的节点中筛选出入度为0的节点
+        s_node = self._getStartingNodeInForwardPropagation(apply_node)
+        # 将入度为0的节点从未计算节点中去掉
+        apply_node = list(set(apply_node).difference(set(s_node)))
+
+        while len(s_node) :
+            for n in s_node :
+                args = []
+                # 从此节点的入边中取得所有运载
+                p = n.bFirstEdge
+                while p is not None :
+                    args.append(p.carry)
+                    # 取得运载后将运载清空，方便后续计算
+                    p.carry = None
+                    p = p.bNextEdge
+
+                # 将运载投入节点负载进行计算
+                res = n.fprop(*args)
+
+                q = n.fFirstEdge
+                # 将计算结果沿着出边向后传递，即分发赋值给所有出边的运载
+                while q is not None:
+                    q.carry = res
+                    q = q.fNextEdge
+            
+            # 去掉图中所有入度为0的点后，会产生新的入度为0的点，继续此步骤直到遍历完所有点
+            # 从还未计算的节点中筛选出入度为0的节点
+            s_node = self._getStartingNodeInForwardPropagation(apply_node)
+            # 将入度为0的节点从未计算节点中去掉
+            apply_node = list(set(apply_node).difference(set(s_node)))
+        
+        # 计算完成后将所有结果点的值收集并返回
+        res_node = self._getEndedNodeInForwardPropagation(self.__nodes)
+        return [n.data for n in res_node]
+            
+
+
+                
 
     # 十字链表法输出计算图结构
     def __str__ (self) :

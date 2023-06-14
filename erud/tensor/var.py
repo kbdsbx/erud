@@ -22,7 +22,7 @@ class var (payload) :
         return self.__data
 
     # 反向传播时，dz/dc = 0
-    def bprop(self, dz = 0) -> any:
+    def bprop(self, dz = None) -> any:
         if ( isinstance(self.__data, np.ndarray) ) :
             return np.zeros_like(self.__data)
         else :
