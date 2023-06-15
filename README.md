@@ -1,5 +1,4 @@
 # Erud
-This is a tiny machine learning framework, but I don't know for sure as what it will become.
 
 # 构建计算图
 
@@ -114,6 +113,11 @@ This is a tiny machine learning framework, but I don't know for sure as what it 
 
 计算图边edge含有属性carry，类型为标量、向量、矩阵或张量，正在计算的节点会从入度边中一次性取得所有运载并进行计算，已计算完成的节点node会将值分发给出度中所有边的运载
 
+
+目前版本为两个节点增加重复边会抛出异常，即对x和y来说，x -> y只可以存在一条边（但可以同时存在x -> y和y -> x）。但考虑到如果有一个节点x，执行x * x运算，那么数据节点x指向操作节点*的边可以有多条。所以边的限制将在后续版本删除
+
+这个接口用起来真是难受死了，得像个办法出一套简单点的接口
+
 ### 命令和接口
 
 单元测试
@@ -157,3 +161,5 @@ g.removeEdge(n1, n2)
 2. 计算图的添加删除边
 3. 张量负载：常量、变量
 4. 二元操作负载：加、减、乘、除
+5. 完成计算图前向传播与反向传播
+6. 实现简化版本的深度学习测试用例（见/test/test_graph.py::test_bprop）

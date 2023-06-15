@@ -26,4 +26,4 @@ class mul (payload) :
         dy = np.multiply(dz, _x)
         dy = partial_sum(dy, _y)
             
-        return dx, dy
+        return [dx, dy]

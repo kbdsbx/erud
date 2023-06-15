@@ -2,7 +2,7 @@ from erud.cg.payload import payload
 import numpy as np
 
 # 结果量，存放计算图的结果
-class res(payload) :
+class ret (payload) :
     __data : any = None
 
     @property
@@ -16,8 +16,8 @@ class res(payload) :
         return self.__data
 
     # 反向传播时，dz/dz = 1
-    def bprop(self, dz = None) -> any :
-        if ( isinstance(self.__data, np.ndarray) ) :
-            return np.ones_like(self.__data)
+    def bprop(self, dz = None) -> list[any] :
+        if isinstance(self.__data, np.ndarray) :
+            return [np.ones_like(self.__data)]
         else :
-            return 1
+            return [1]

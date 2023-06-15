@@ -26,4 +26,4 @@ class add (payload) :
         dy = dz
         dy = partial_sum(dy, _y)
 
-        return dx, dy
+        return [dx, dy]

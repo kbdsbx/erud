@@ -15,6 +15,10 @@ class ComputationGraph:
     def hasNode(self) :
         return len(self.__nodes)
     
+    @property
+    def nodes(self) -> list[node] :
+        return self.__nodes
+    
     # 增加节点
     def insertNode(self, node : node):
         for _n in self.__nodes :
@@ -161,7 +165,7 @@ class ComputationGraph:
     # 针对前向传播
     # 获得子图中入度为0的点（源点）
     # 如果点的入边数为零，或所有入边都有负载，则此点入度为0
-    def _getStartingNodeInForwardPropagation(self, nodes) -> list(node):
+    def _getStartingNodeInForwardPropagation(self, nodes : list[node]) -> list[node]:
         res = []
         for n in nodes:
             p = n.bFirstEdge
@@ -180,14 +184,13 @@ class ComputationGraph:
 
     # 针对前向传播
     # 获得子图中出度为0的点（汇点）
-    def _getEndedNodeInForwardPropagation(self, nodes) -> list(node) :
+    def _getEndedNodeInForwardPropagation(self, nodes : list[node]) -> list[node] :
         res = []
         for n in nodes:
             if n.fFirstEdge is None :
                 res.append(n)
         
         return res
-
 
 
     # 前向传播
@@ -230,8 +233,75 @@ class ComputationGraph:
         # 计算完成后将所有结果点的值收集并返回
         res_node = self._getEndedNodeInForwardPropagation(self.__nodes)
         return [n.data for n in res_node]
+
+    # 针对反向传播
+    # 获得子图中入度为0的点（源点）
+    # 如果点的入边数为零，或所有入边都有负载，则此点入度为0
+    def _getStartingNodeInBackwardPropagation(self, nodes: list[node]) -> list[node] :
+        res = []
+        for n in nodes:
+            p = n.fFirstEdge
+            while p is not None:
+                # 如果此入边的负载存在，则边不计入入度
+                if p.carry is not None :
+                    p = p.fNextEdge
+                # 如果此入边的负载不存在，则计入入度，此点的入度大于零
+                else :
+                    break
+            else :
+                res.append(n)
+
+        return res
+    
+
             
 
+    # 反向传播
+    # 此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
+    def bprop (self) : 
+        apply_node = self.__nodes
+
+        # 从还未计算的节点中筛选出入度为0的节点
+        s_node : list[node] = self._getStartingNodeInBackwardPropagation(apply_node)
+        # 将入度为0的节点从未计算节点列表中去掉
+        apply_node = list(set(apply_node).difference(set(s_node)))
+
+        while len(s_node) :
+            for n in s_node :
+                # 从此节点的入边中获取所有运载
+                # 一般来说，运算符的入边只有一条，只有变量的入边有一或多条，表明此变量在前向计算中发生了分发
+                # 但是没关系，反向传播时变量的每一条入边的运载都是这个变量的偏导
+                # 只需要将所有偏导加起来就是这个这个变量的导数（指代价函数J对变量w的导数dJ/dw）
+                args = None
+                p = n.fFirstEdge
+                while p is not None :
+                    if args == None :
+                        args = p.carry
+                    else :
+                        args += p.carry
+                    # 取得运载后将运载清空，方便后续计算
+                    p.carry = None
+                    p = p.fNextEdge
+                
+                # 将运载投入节点负载计算反向传播，根据不同的负载类型会有一到多个结果
+                res = n.bprop(args)
+
+                i = 0
+                q = n.bFirstEdge
+                # 将结果按顺序分发给每一条出边
+                while q is not None:
+                    q.carry = res[i]
+                    q = q.bNextEdge
+                    i += 1
+            
+            # 去掉图中所有入度为0的点后，会产生新的入度为0的点，继续此步骤直到遍历完所有点
+            # 从还未计算的节点中筛选出入度为0的节点
+            s_node = self._getStartingNodeInBackwardPropagation(apply_node)
+            # 将入度为0的节点从未计算节点中去掉
+            apply_node = list(set(apply_node).difference(set(s_node)))
+        
+        # 反向传播无需返回值，因为最后对常数或变量求导的值都为0，整体偏导即为0
+        
 
                 
 

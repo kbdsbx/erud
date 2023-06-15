@@ -3,7 +3,11 @@ from erud.cg.payload import payload
 
 class ComputationNode :
     #### 数据域
-    data : payload = None
+    __data : payload = None
+
+    @property
+    def data (self) :
+        return self.__data
 
     #### 前向传播路径
     fFirstEdge : "edge.ComputationEdge" = None
@@ -13,17 +17,17 @@ class ComputationNode :
 
     # 计算前向传播
     def fprop(self, *args) :
-        return self.data.fprop(*args)
+        return self.__data.fprop(*args)
     
     # 计算反向传播
-    def bprop(self, *args) :
-        return self.data.bprop(*args)
+    def bprop(self, args) :
+        return self.__data.bprop(args)
 
     def __init__ (self, pl : payload = None) :
-        self.data = pl
+        self.__data = pl
 
     def __str__(self) :
-        if self.data == None :
+        if self.__data == None :
             return ""
         else :
-            return self.data
+            return self.__data

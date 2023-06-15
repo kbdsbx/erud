@@ -22,7 +22,7 @@ class div (payload) :
         dx = np.divide(dz, _y)
         dx = partial_sum(dx, _x)
 
-        dy = dz * -_x * np.power(_y, -2)
+        dy = dz * -_x * np.divide(1, np.power(_y, 2))
         dy = partial_sum(dy, _y)
 
-        return dx, dy
+        return [dx, dy]
