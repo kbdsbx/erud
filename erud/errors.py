@@ -1,4 +1,6 @@
 
+####### 计算图异常 #######
+
 # 找不到节点
 class NodeNotFindError ( Exception ) : ...
 
@@ -10,3 +12,9 @@ class EdgeRepeatError (Exception ) : ...
 
 # 重复添加节点
 class NodeRepeatError (Exception) : ...
+
+
+####### nous语言表达式异常 ######
+
+# 表达式错误
+class ParseError (Exception) : ...

@@ -1,6 +1,6 @@
 from erud.cg.graph import ComputationGraph as graph
 from erud.cg.node import ComputationNode as node
-from erud.cg.errors import *
+from erud.errors import *
 import numpy as np
 import random
 

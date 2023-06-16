@@ -1,6 +1,6 @@
 from erud.cg.edge import ComputationEdge as edge
 from erud.cg.node import ComputationNode as node
-from erud.cg.errors import *
+from erud.errors import *
 
 # 计算图
 # 使用十字链表存储
