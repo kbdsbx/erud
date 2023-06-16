@@ -2,7 +2,7 @@ from erud.cg.payload import payload
 import numpy as np
 
 # 结果量，存放计算图的结果
-class ret (payload) :
+class rest (payload) :
     __data : any = None
 
     @property

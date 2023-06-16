@@ -290,7 +290,7 @@ from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
 from erud.tensor.var import var
-from erud.tensor.ret import ret
+from erud.tensor.rest import rest
 
 # 前向传播，即计算图计算
 def test_fprop() :
@@ -308,7 +308,7 @@ def test_fprop() :
     n7 = node(mul())
     n8 = node(sub())
     n9 = node(div())
-    n10 = node(ret())
+    n10 = node(rest())
 
     g.insertNode(n1)
     g.insertNode(n2)
@@ -387,7 +387,7 @@ def test_bprop () :
     o5 = node(div())
     o6 = node(sub())
 
-    s = node(ret())
+    s = node(rest())
 
     g.insertNode(c1)
     g.insertNode(c2)
