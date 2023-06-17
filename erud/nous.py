@@ -5,39 +5,63 @@ from erud.opts.add import add
 from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
-from erud.cg.payload import payload
+from erud.tensor.var import var
+from erud.tensor.rest import rest
+import numpy as np
 import re
 
 # 解析代码，构造计算图
 class nous :
     # 可用的操作符
-    __options = {
+    __operators = {
         'add' : add,
         'sub' : sub,
         'mul' : mul,
         'div' : div
     }
+
     # 所有语句关键词
     __keywords = [
         'as',
-        'then'
-        '->'
-        'REST'
+        'then',
+        '->',
+        'rest'
+        '##'
     ]
+
+    # 可用的初始化函数
+    __init_func = {
+        '' : (lambda x : np.zeros(x)),
+        'randn' : (lambda x : np.random.randn(*x)),
+        'ones' : (lambda x : np.ones(x)),
+        'zeros' : (lambda x : np.zeros(x))
+    }
+
     # 输入语句
     __code : str = ''
 
+    # 计算图
+    __g : graph
+
     def __init__ (self, code = '') :
         self.__code = code
+
+    # 去掉外层多余小括号
+    def _stripBrackets(self, el : str) -> str:
+        while el.startswith('(') and el.endswith(')') :
+            el = el[1:-1]
+        return el
+
     
-    # 获得下一个元素
-    # 返回获得的元素对象
+    # 从代码块中获得下一个元素
+    # str : str 代码块
+    # el : str 返回获得的元素字符串
     #   * 关键词
     #   * 变量
     #   * 操作符
     #   * 子块
     #   * 等
-    # 返回去掉元素后的代码子串
+    # rest_str : str 返回去掉元素后的代码子串
     # 支持Unicode
     def _getNextEl(self, str: str) :
         # 在遍历字符的过程中暂存括号
@@ -72,14 +96,295 @@ class nous :
             hope = {'[' : ']', '{' : '}', '(' : ')'}[p]
             raise ParseError('Parsing code error, can not find "%s" to match "%s".' % (hope, p))
         
-        el.strip()
-        rest_str.strip()
+        el = el.strip()
+        rest_str = rest_str.strip()
         
         # 去掉外层多余小括号
-        while el.startswith('(') and el.endswith(')') :
-            el = el[1:-1]
+        el = self._stripBrackets(el)
         
         return el, rest_str
+
+
+    # 是否是子块
+    # el元素字符串
+    # 子块由不止一个元素组成，所以使用getNextEl判断
+    def _isBlock(self, el : str) -> bool:
+        el = el.strip()
+
+        return self._getNextEl(el)[1] != ''
+    
+    
+    # 是否是操作符
+    def _isOperator(self, el : str) -> bool :
+        # 先判断是否是关键词
+        if el in self.__keywords :
+            return False
+        
+        if el in self.__operators.keys() :
+            return True
+        
+        return False
+    
+
+    # 创建操作符节点
+    def _makeOperator(self, el:str) -> node:
+        if not self._isOperator(el) :
+            raise ParseError('"%s" is a illegal operator.' % (el))
+        
+        return node(self.__operators[el]())
+    
+
+    # 是否是合法引用
+    # el : str 元素字符
+    # g : graph 当前运算图
+    def _isReference(self, el:str, g:graph) -> bool :
+        if el in self.__keywords :
+            return False
+        
+        if el in self.__operators.keys() :
+            return False
+        
+        # 在计算图所有节点中寻找同名节点
+        for n in g.nodes :
+            if n.data.name == el :
+                return True
+        else :
+            return False
+    
+
+    # 获得引用节点
+    # el : str 元素字符
+    # g : graph 当前运算图
+    def _getReference(self, el:str, g:graph) -> node :
+        if not self._isReference(el, g) :
+            raise ParseError('Can not find node named "%s" in computation graph.' % (el))
+        
+        for n in g.nodes :
+            if n.data.name == el :
+                return n
+    
+
+    # 是否是合法初始化表达式
+    # 合法的初始化表达式是init_func( 5, 4, 33 )
+    def _isInitFunc(self, el:str) -> bool :
+        mp = "|".join(self.__init_func.keys())
+        # re.compile(r"^(add|sub|div|mul){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        return mc.search(el) is not None
+
+
+    # 是否是合法名称
+    def _isName(self, el:str) -> bool :
+        # 不能是关键词
+        if el in self.__keywords :
+            return False
+        
+        # 不能是操作符
+        if el in self.__operators.keys() :
+            return False
+
+        # 不能以数字开头
+        if el.startswith(('0', '1', '2', '3', '4', '5', '6', '8', '9')) :
+            return False
+        
+        # 只允许出现文字、字母、下划线和数字
+        # 允许为空
+        km = re.compile(r'^[\w_\d]*$', re.U)
+        if km.search(el) is None :
+            return False
+        
+        # 不能是初始化表达式
+        if self._isInitFunc(el) :
+            return False
+        
+        return True
+
+    
+    # 是否是合法标量或张量
+    ###### 错误的实现方式
+    def _isTensor(self, el:str) -> bool :
+        try :
+            np.array(eval(el))
+        except :
+            return False
+
+        return True
+    
+
+    # 是否是合法数字
+    def _isNumber(self, el:str) -> bool :
+        mc = re.compile(r"^[\-]?\d*[\.]?\d+$", re.U)
+        return mc.match(el) is not None
+
+    
+
+    # 是否是合法值，包括标量、张量和初始化函数
+    def _isValue(self, el:str) -> bool :
+        if self._isBlock(el) :
+            return False
+        
+        if el in self.__keywords :
+            return False
+        
+        if el in self.__operators.keys() :
+            return False
+        
+        if self._isInitFunc(el) :
+            return True
+
+        if self._isNumber(el) :
+            return True
+        
+        if self._isTensor(el) :
+            return True
+        
+        if el == '' :
+            return True
+        
+        return False
+
+
+    # 创建合法值，依据元素类型返回张量或标量，如果元素是初始化函数，则执行此函数
+    def _makeValue(self, el:str) -> any :
+        if self._isInitFunc(el) :
+            mp = "|".join(self.__init_func.keys())
+            mc = re.compile(r"^(" + mp + r"){1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+            mg= mc.search(el)
+            # mg[1] 为方法名
+            # mg[2] 为初始化元组
+            f = mg[1]
+            tu = tuple( int(i) for i in self._stripBrackets( mg[2].rstrip() ).split(',') )
+            return self.__init_func[f](tu)
+        
+        if self._isNumber(el) :
+            return float(el)
+        
+        if self._isTensor(el) :
+            return np.array(eval(el))
+        
+        if el == '' :
+            return None
+
+        raise ParseError('"%s" is a illegal form of value.' % (el))
+    
+    # 是否是合法变量
+    def _isVariable(self, el:str) -> bool:
+        sp_idx = el.find(":")
+
+        if -1 == sp_idx :
+            if self._isName(el):
+                return True
+            elif self._isValue(el):
+                return True
+            else :
+                return False
+        else :
+            name_str = el[:sp_idx]
+            value_str = el[sp_idx + 1:]
+            if self._isName(name_str) and self._isValue(value_str) :
+                return True
+            else :
+                return False
+        
+
+    # 创建变量节点
+    # el : str 变量表达式
+    # 1. X或X: 名称X，无值
+    # 2. 5或:5 无名称，值为5
+    # 2. X:5 名称X，值为5
+    # 3. X:(1) 名称X，类型为(1)张量
+    # 4. X:(10, 20) 名称X，类型为10x20矩阵
+    # 5. X:[[1, 2], [3, 4]] 名称X，类型为2x2矩阵，值为[[1, 2], [3, 4]]
+    # 6. X:randn(5, 10) 名称X，类型为5x10矩阵，值为rand函数产生的随机数张量
+    # 7. X:zeros(5, 10) 名称X，类型为5x10矩阵，值为zeros函数产生的全零张量
+    # 8. X:ones(5, 10) 名称X，类型为5x10矩阵，值为ones函数产生的全一张量
+    def _makeVariable(self, el:str) -> node :
+        sp_idx = el.find(":")
+
+        name = None
+        value = None
+        
+        # 如果没有分号，则匹配名称或值
+        if -1 == sp_idx :
+            if self._isName(el) :
+                name = el
+            elif self._isValue(el) :
+                value = self._makeValue(el)
+            else :
+                raise ParseError('Can not create variable from "%s".' % (el))
+        # 如果有分号，则分别匹配名称和值
+        else :
+            name_str = el[:sp_idx]
+            value_str = el[sp_idx + 1:]
+            if self._isName(name_str) :
+                if name_str == '' :
+                    name = None
+                else :
+                    name = name_str
+            else :
+                raise ParseError('Can not create variable from "%s".' % (el))
+
+            if self._isValue(value_str) :
+                value = self._makeValue(value_str)
+            else :
+                raise ParseError('Can not create variable from "%s".' % (el))
+        
+        n = node(var(value))
+        self._setOperatorName(n, name)
+
+        return n
+
+
+    # 给操作符命名
+    def _setOperatorName(self, n:node, el:str) :
+        n.data.name = el
+    
+
+    # 是否是休止符
+    def _isRest(self, el:str) -> bool:
+        sp_idx = el.find(":")
+
+        # 匿名休止符
+        if -1 == sp_idx :
+            if el == 'rest' or el == '##' :
+                return True
+            else :
+                return False
+        # 命名休止符
+        else :
+            name_str = el[:sp_idx]
+            value_str = el[sp_idx + 1:]
+            if self._isName(name_str) and (value_str == 'rest' or value_str == '##') :
+                return True
+            else :
+                return False
+            
+    
+    # 创建休止符（结果节点）
+    def _makeRest(self, el:str) -> node :
+        sp_idx = el.find(":")
+        name = None
+
+        if -1 == sp_idx :
+            if el != 'rest' and el != '##':
+                raise ParseError('"%s" is a illegal operator of rest.' % (el))
+        
+        else :
+            name_str = el[:sp_idx]
+            value_str = el[sp_idx + 1:]
+            if self._isName(name_str) and (value_str == 'rest' or value_str == '##') :
+                if name_str == '' :
+                    name = None
+                else :
+                    name = name_str
+            else :
+                raise ParseError('"%s" is a illegal operator of rest.' % (el))
+        
+        n = node(rest())
+        self._setOperatorName(n, name)
+
+        return n
+
 
 
     # 处理块逻辑，并返回解析块的计算图的汇点（终点）

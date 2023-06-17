@@ -2,7 +2,7 @@
 # 节点的负载类，所有计算图中参与计算的模块的父类
 class payload : 
     # 运载类节点的名称，可以给任何节点命名以便于在计算图中寻找此节点
-    __name : any
+    __name : any = None
 
     @property
     def name (self) -> any:
