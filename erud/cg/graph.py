@@ -49,16 +49,19 @@ class ComputationGraph:
         else :
             _x_edge = nodeX.fFirstEdge
 
-            if _x_edge.fNode is nodeY :
-                raise EdgeRepeatError('this edge is exists.')
+            # 允许多条边了现在
+            # if _x_edge.fNode is nodeY :
+            #     raise EdgeRepeatError('this edge is exists.')
 
             while _x_edge.fNextEdge is not None :
-                if _x_edge.fNode is nodeY :
-                    raise EdgeRepeatError('this edge is exists.')
+                # 允许多条边了现在
+                # if _x_edge.fNode is nodeY :
+                #     raise EdgeRepeatError('this edge is exists.')
                 _x_edge = _x_edge.fNextEdge
             else :
-                if _x_edge.fNode is nodeY :
-                    raise EdgeRepeatError('this edge is exists.')
+                # 允许多条边了现在
+                # if _x_edge.fNode is nodeY :
+                #     raise EdgeRepeatError('this edge is exists.')
                 _x_edge.fNextEdge = _insert_edge
 
         if nodeY.bFirstEdge is None :
@@ -90,6 +93,8 @@ class ComputationGraph:
             _f = _f.fNextEdge
         
         # 遍历删除边
+        # 这个大概是有问题的
+        # 待更改
         for _n in _f_nodes:
             _b_edge = _n.bFirstEdge
 
@@ -99,8 +104,8 @@ class ComputationGraph:
                 while _b_edge.bNextEdge is not None :
                     if _b_edge.bNextEdge.bNode is node :
                         _b_edge.bNextEdge = _b_edge.bNextEdge.bNextEdge
-                        break
-                    _b_edge = _b_edge.bNextEdge
+                    else :
+                        _b_edge = _b_edge.bNextEdge
         
 
         _b_nodes : list[node] = []
@@ -121,8 +126,8 @@ class ComputationGraph:
                 while _f_edge.fNextEdge is not None :
                     if _f_edge.fNextEdge.fNode is node :
                         _f_edge.fNextEdge = _f_edge.fNextEdge.fNextEdge
-                        break
-                    _f_edge = _f_edge.fNextEdge
+                    else :
+                        _f_edge = _f_edge.fNextEdge
 
 
         # 删除节点
@@ -130,44 +135,78 @@ class ComputationGraph:
 
 
     # 删除边
-    def removeEdge(self, nodeX : node, nodeY : node) :
+    # 返回删除边的数量
+    def removeEdge(self, nodeX : node, nodeY : node) -> int:
         try :
             self.__nodes.index(nodeX)
             self.__nodes.index(nodeY)
         except :
             raise NodeNotFindError('Can not find relative node in computation graph when removes a edge.')
         
-        _x_edge = nodeX.fFirstEdge
+        # 删除边的数量
+        # 由于前向边和反向边数量相同，所以只计算一侧
+        ct = 0
 
+        # 伪头，方便计算
+        _h = edge(None, None)
+        _h.fNextEdge = nodeX.fFirstEdge
+        _p = _h
 
-        if _x_edge is None :
-            raise EdgeNotFindError('Can not find edge in computation graph.')
-        elif _x_edge.fNode is nodeY :
-            nodeX.fFirstEdge = _x_edge.fNextEdge
-        else :
-            while _x_edge.fNextEdge is not None :
-                if _x_edge.fNextEdge.fNode is nodeY :
-                    _x_edge.fNextEdge = _x_edge.fNextEdge.fNextEdge
-                    break
-                _x_edge = _x_edge.fNextEdge
-            else :
-                raise EdgeNotFindError('Can not find edge in computation graph.')
+        if _p.fNextEdge is None :
+            raise EdgeNotFindError('Can not find this edge in computation graph.')
         
-        _y_edge = nodeY.bFirstEdge
-
-        if _y_edge is None :
-            raise EdgeNotFindError('Can not find edge in computation graph.')
-        elif _y_edge.bNode is nodeX :
-            nodeY.bFirstEdge = _y_edge.bNextEdge
-        else :
-            while _y_edge.bNextEdge is not None :
-                if _y_edge.bNextEdge.bNode is nodeX :
-                    _y_edge.bNextEdge = _y_edge.bNextEdge.bNextEdge
-                    break
-                _y_edge = _y_edge.bNextEdge
+        while _p.fNextEdge is not None :
+            if _p.fNextEdge.fNode is nodeY :
+                _p.fNextEdge = _p.fNextEdge.fNextEdge
+                ct += 1
             else :
-                raise EdgeNotFindError('Can not find edge in computation graph.')
+                _p = _p.fNextEdge
+        
+        nodeX.fFirstEdge = _h.fNextEdge
 
+        # elif _x_edge.fNode is nodeY :
+        #     nodeX.fFirstEdge = _x_edge.fNextEdge
+        #     ct += 1
+        # else :
+        #     while _x_edge.fNextEdge is not None :
+        #         if _x_edge.fNextEdge.fNode is nodeY :
+        #             _x_edge.fNextEdge = _x_edge.fNextEdge.fNextEdge
+        #             ct += 1
+        #         else :
+        #             _x_edge = _x_edge.fNextEdge
+    
+        _h = edge(None, None)
+        _h.bNextEdge = nodeY.bFirstEdge
+        _p = _h
+
+        if _p.bNextEdge is None :
+            raise EdgeNotFindError('Can not find this edge in computation graph.')
+        
+        while _p.bNextEdge is not None :
+            if _p.bNextEdge.bNode is nodeX :
+                _p.bNextEdge = _p.bNextEdge.bNextEdge
+            else :
+                _p = _p.bNextEdge
+        
+        nodeY.bFirstEdge = _h.bNextEdge
+        
+        # _y_edge = nodeY.bFirstEdge
+
+        # if _y_edge is None :
+        #     raise EdgeNotFindError('Can not find this edge in computation graph.')
+        # elif _y_edge.bNode is nodeX :
+        #     nodeY.bFirstEdge = _y_edge.bNextEdge
+        # else :
+        #     while _y_edge.bNextEdge is not None :
+        #         if _y_edge.bNextEdge.bNode is nodeX :
+        #             _y_edge.bNextEdge = _y_edge.bNextEdge.bNextEdge
+        #         else :
+        #             _y_edge = _y_edge.bNextEdge
+
+        if 0 == ct :
+            raise EdgeNotFindError('Can not find this edge in computation graph.')
+        
+        return ct
 
     # 针对前向传播
     # 获得子图中入度为0的点（源点）
@@ -316,15 +355,15 @@ class ComputationGraph:
     def __str__ (self) :
         str = "\n"
         for node in self.__nodes :
-            str += "| %s |\t" %(node.data.name)
+            str += "| %s |\t" %(node.data)
             p = node.fFirstEdge
             while p != None:
-                str += "[->%s] " %(p.fNode.data.name)
+                str += "[->%s] " %(p.fNode.data)
                 p = p.fNextEdge
 
             p = node.bFirstEdge
             while p != None:
-                str += "[<-%s] " %(p.bNode.data.name)
+                str += "[<-%s] " %(p.bNode.data)
                 p = p.bNextEdge
 
             str += "\n"

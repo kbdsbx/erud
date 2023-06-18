@@ -25,3 +25,6 @@ class payload :
     # 变量类型可以使标量、矢量、矩阵、张量等
     def bprop () -> list[any] : ...
 
+    def __str__ (self) -> str:
+        return self.name
+

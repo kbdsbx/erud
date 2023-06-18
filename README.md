@@ -154,7 +154,7 @@ W1 then sqr then sum then plus C then times LAMBDA then plus J then REST
 
 # corss_entropy(sigmoid(relu(relu(relu(relu(X * W1 + B1) * W2 + B2) * W3 + B3) * W4 + B4)))
 graph = '''
-X:(1000, 10) matmul W1:r(10, 50) -> add B1:z(40) -> relu -> matmul W2:z(40, 20) -> add B2:z(20) -> relu -> matmul W3:r(20, 10) -> add B3:z(10) -> matmul W4:r(10, 1) -> add B4:z(1) -> sigmoid -> corss_entropy y:(1000) -> J:##
+X:(1000, 10) matmul W1:r(10, 50) -> add B1:z(40) -> relu -> matmul W2:z(40, 20) -> add B2:z(20) -> relu -> matmul W3:r(20, 10) -> add B3:z(10) -> matmul W4:r(10, 1) -> add B4:z(1) -> sigmoid -> corss_entropy y:(1000) -> J:$$
 '''
 
 # rest = [(5 + 10) * (6 - 19) / 3 ] / (-65) - 1
@@ -167,16 +167,16 @@ u1 mul u2 then div 3 then div -65 then sub 1 then REST
 graph = '''
 # 这里是注释
 
-# 下面三个各是一行
+# 下面两个各是一行
 5 add 10 as u
 6 sub 19 as v
 
-    # 下面三个是一行
+    # 下面两个是一行
     u mul v ->
     div 3 as t
 
 # 结束
-t -> y:##
+t -> y:$$
 '''
 ```
 
@@ -221,8 +221,8 @@ t -> y:##
 
     匿名变量只能由`fprop`获得，命名变量也可以由查找节点的方法（<b style="color: red">还未实现</b>）在前向传播完成后取得对应的值
 
-    * ``... -> rest``或``... -> ##``: 声明匿名结果变量节点
-    * ``... -> J:rest``或``... -> J:##``: 声明结果变量节点，并命名为``J``
+    * ``... -> rest``或``... -> $$``: 声明匿名结果变量节点
+    * ``... -> J:rest``或``... -> J:$$``: 声明结果变量节点，并命名为``J``
 
 6. 声明子块
 
@@ -245,7 +245,7 @@ t -> y:##
             matmul W3 add B3 -> relu ->
         sigmoid as u
         # 最后一行为一子块
-        u cross_entropy y -> J:##
+        u cross_entropy y -> J:$$
         ```
 
 8. 注释
@@ -315,7 +315,7 @@ n = nous(
     W2 -> sqr -> sum as u7
     W1 -> sqr -> sum -> add u7 -> mul LAMBDA as u8
 
-    J_mle add u8 -> J:##
+    J_mle add u8 -> J:$$
     '''
 )
 

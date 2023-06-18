@@ -149,7 +149,7 @@ def test_is_value () :
     assert n._isValue('a add b') == False
     assert n._isValue('then') == False
     assert n._isValue('add') == False
-    assert n._isValue('##') == False
+    assert n._isValue('$$')== False
 
 def test_make_value () :
     n = nous()
@@ -279,17 +279,17 @@ def test_make_variable() :
         n._makeVariable('zeros(1,,3)')
 
     with test.raises(ParseError) :
-        n._makeVariable('J:##')
+        n._makeVariable('J:$$')
     
 
 def test_nous_is_rest () :
     n = nous()
 
     assert n._isRest('J:XX') == False
-    assert n._isRest('J:##') == True
-    assert n._isRest('_:##') == True
-    assert n._isRest(':##') == True
-    assert n._isRest('##') == True
+    assert n._isRest('J:$$') == True
+    assert n._isRest('_:$$') == True
+    assert n._isRest(':$$') == True
+    assert n._isRest('$$') == True
     assert n._isRest('rest')== True
     assert n._isRest('J:rest')== True
     assert n._isRest('J:[1,2]')== False
@@ -299,11 +299,11 @@ from erud.tensor.rest import rest
 def test_make_rest() :
     n = nous()
 
-    nd = n._makeRest('##')
+    nd = n._makeRest('$$')
     assert isinstance(nd.data, rest)
     assert nd.data.name == None
 
-    nd = n._makeRest('J:##')
+    nd = n._makeRest('J:$$')
     assert isinstance(nd.data, rest)
     assert nd.data.name == 'J'
 
@@ -365,11 +365,11 @@ def test_process_block() :
 
     # 终止符放在首部
     with test.raises(ParseError) :
-        n._processBlock('## add X', g)
+        n._processBlock('$$ add X', g)
     
     g = graph()
 
-    n._processBlock('X:(1) add Y:[[1,2], [3.4, 0]] -> sub Z -> ##', g)
+    n._processBlock('X:(1) add Y:[[1,2], [3.4, 0]] -> sub Z -> $$', g)
     assert isinstance( g.nodes[0].data, var )
     assert isinstance( g.nodes[0].data.data, np.ndarray)
     assert g.nodes[0].data.data[0] == 0
@@ -386,14 +386,14 @@ def test_process_block() :
     assert g.nodes[1].data.name == 'u1'
     n._processBlock('6 sub 19 as u2', g)
     assert g.nodes[4].data.name == 'u2'
-    n._processBlock('u1 mul u2 -> div 3 -> res:##', g)
+    n._processBlock('u1 mul u2 -> div 3 -> res:$$', g)
     
     [res] = g.fprop()
     assert res.data == -65
 
     g = graph()
     np.random.seed(1)
-    n._processBlock('X:[[1,2], [3,4]] add Y:randn(2, 2) sub :[-1, -2] -> div 0.01 -> ##', g)
+    n._processBlock('X:[[1,2], [3,4]] add Y:randn(2, 2) sub :[-1, -2] -> div 0.01 -> $$', g)
     [res] = g.fprop()
 
     assert res.data.shape == (2,2)
@@ -404,13 +404,13 @@ def test_process_block() :
     n._processBlock('5 add 10 as u', g)
     n._processBlock('6 sub 19 as v', g)
     n._processBlock('u mul v as t', g)
-    n._processBlock('t div 3 then y:##', g)
+    n._processBlock('t div 3 then y:$$', g)
     [res] = g.fprop()
 
     assert res.data == -65
 
     g = graph()
-    n._processBlock('5 add 10 as u mul (6 sub 19 as v) as t div 3 then y:##', g)
+    n._processBlock('5 add 10 as u mul (6 sub 19 as v) as t div 3 then y:$$', g)
     assert g.nodes[1].data.name == 'u'
     assert g.nodes[4].data.name == 'v'
     assert g.nodes[6].data.name == 't'
@@ -420,7 +420,7 @@ def test_process_block() :
     assert res.data == -65
 
     # g = graph()
-    # n._processBlock('a:5 add b:10 as u mul (c:6 sub d:19 as v) as w div e:3 as t then y:##', g)
+    # n._processBlock('a:5 add b:10 as u mul (c:6 sub d:19 as v) as w div e:3 as t then y:$$', g)
     # print(g)
 
 def test_nous_parse() :
@@ -430,15 +430,24 @@ def test_nous_parse() :
     5 add 10 as u
     6 sub 19 as v
 
-        # 下面三个是一行
+        # 下面两个是一行
         u mul v ->
         div 3 as t
 
     # 结束
-    t -> y:##
+    t -> y:$$
     ''')
 
     g = n.parse()
     [res] = g.fprop()
 
     assert res.data == -65
+
+    n = nous('''
+    # X被多次引用计算
+    X:5 add X mul X sub X mul X -> $$
+    ''')
+
+    [res] = n.parse().fprop()
+
+    assert res.data == 225

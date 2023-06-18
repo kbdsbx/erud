@@ -26,7 +26,19 @@ class nous :
         'then',
         '->',
         'rest'
-        '##'
+        '$$'
+    ]
+
+    # 层连接关键词
+    __layer_keywords = [
+        'then',
+        '->'
+    ]
+
+    # 结束符关键词
+    __rest_keywords = [
+        'rest',
+        '$$'
     ]
 
     # 可用的初始化函数
@@ -205,7 +217,7 @@ class nous :
 
     
     # 是否是合法标量或张量
-    ###### 错误的实现方式
+    # ------ 错误的实现方式
     def _isTensor(self, el:str) -> bool :
         try :
             np.array(eval(el))
@@ -350,7 +362,7 @@ class nous :
 
         # 匿名休止符
         if -1 == sp_idx :
-            if el == 'rest' or el == '##' :
+            if el in self.__rest_keywords :
                 return True
             else :
                 return False
@@ -358,7 +370,7 @@ class nous :
         else :
             name_str = el[:sp_idx]
             value_str = el[sp_idx + 1:]
-            if self._isName(name_str) and (value_str == 'rest' or value_str == '##') :
+            if self._isName(name_str) and (value_str in self.__rest_keywords) :
                 return True
             else :
                 return False
@@ -370,13 +382,13 @@ class nous :
         name = None
 
         if -1 == sp_idx :
-            if el != 'rest' and el != '##':
+            if el not in self.__rest_keywords :
                 raise ParseError('"%s" is a illegal operator of rest.' % (el))
         
         else :
             name_str = el[:sp_idx]
             value_str = el[sp_idx + 1:]
-            if self._isName(name_str) and (value_str == 'rest' or value_str == '##') :
+            if self._isName(name_str) and (value_str in self.__rest_keywords) :
                 if name_str == '' :
                     name = None
                 else :
@@ -509,7 +521,7 @@ class nous :
                 # opt.data.name = el
 
             # 层连接符
-            elif el == '->' or el == 'then' :
+            elif el in self.__layer_keywords :
                 # 层连接符不能放在表达式首部
                 if left is None :
                     raise ParseError('Liner "%s" before all of statements is mistake.' % (el))
@@ -572,7 +584,7 @@ class nous :
             block += ' ' + b
 
             # 以层连接符结尾的视为块内换行
-            if not ( b.endswith('->') or b.endswith('then') ) :
+            if not ( b.endswith(tuple(self.__layer_keywords)) ) :
                 self._processBlock(block, self.__g)
                 block = ''
         

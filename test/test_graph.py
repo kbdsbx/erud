@@ -104,17 +104,14 @@ def test_graph_raise_unfind_node() :
     g.addEdge(n2, n5)
     g.addEdge(n2, n6)
 
-    with pytest.raises(EdgeRepeatError) :
-        # 重复添加n1->n2的边
-        g.addEdge(n1, n2)
+    # 重复添加n1->n2的边
+    g.addEdge(n1, n2)
 
-    with pytest.raises(EdgeRepeatError) :
-        # 重复添加n1->n4的边
-        g.addEdge(n1, n4)
+    # 重复添加n1->n4的边
+    g.addEdge(n1, n4)
 
-    with pytest.raises(EdgeRepeatError) :
-        # 重复添加n2->n6的边
-        g.addEdge(n2, n6)
+    # 重复添加n2->n6的边
+    g.addEdge(n2, n6)
     
     # print(g)
 
@@ -137,20 +134,26 @@ def test_graph_remove_edge() :
     g.insertNode(n6)
 
     g.addEdge(n1, n2)
+    g.addEdge(n1, n2)
+    g.addEdge(n1, n2)
     g.addEdge(n1, n3)
+    g.addEdge(n1, n4)
     g.addEdge(n1, n4)
     g.addEdge(n1, n5)
     g.addEdge(n2, n5)
     g.addEdge(n2, n6)
 
-    g.removeEdge(n1, n2)
+    c = g.removeEdge(n1, n2)
+    print(g)
+    assert c == 3
 
     assert n1.fFirstEdge.fNode is n3
     assert n1.fFirstEdge.bNode is n1
     assert n3.bFirstEdge.bNode is n1
     assert n3.bFirstEdge.fNode is n3
 
-    g.removeEdge(n1, n4)
+    c = g.removeEdge(n1, n4)
+    assert c == 2
 
     assert n1.fFirstEdge.fNextEdge.fNode is n5
     assert n1.fFirstEdge.fNextEdge.bNode is n1
