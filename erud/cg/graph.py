@@ -12,9 +12,16 @@ class ComputationGraph:
 
     # 节点数量
     @property
-    def hasNode(self) :
+    def nodeCount(self) :
         return len(self.__nodes)
-    
+
+    # 是否拥有节点
+    def hasNode(self, node : node) :
+        for _n in self.__nodes :
+            if _n is node :
+                return True
+        return False
+
     @property
     def nodes(self) -> list[node] :
         return self.__nodes
@@ -309,15 +316,15 @@ class ComputationGraph:
     def __str__ (self) :
         str = "\n"
         for node in self.__nodes :
-            str += "| %s |\t" %(node.data)
+            str += "| %s |\t" %(node.data.name)
             p = node.fFirstEdge
             while p != None:
-                str += "[->%s] " %(p.fNode.data)
+                str += "[->%s] " %(p.fNode.data.name)
                 p = p.fNextEdge
 
             p = node.bFirstEdge
             while p != None:
-                str += "[<-%s] " %(p.bNode.data)
+                str += "[<-%s] " %(p.bNode.data.name)
                 p = p.bNextEdge
 
             str += "\n"

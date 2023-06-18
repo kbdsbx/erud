@@ -321,5 +321,124 @@ def test_make_rest() :
     with test.raises(ParseError) :
         n._makeRest('6')
 
+from erud.tensor.var import var
+from erud.tensor.rest import rest
 
+def test_process_block() :
 
+    n = nous()
+    g = graph()
+
+    # 左操作数和子块并列，中间没有操作符
+    with test.raises(ParseError) :
+        n._processBlock('X (a add b)', g)
+
+    # 右操作数和子块并列，中间没有操作符
+    with test.raises(ParseError) :
+        n._processBlock('X add Y (a add b)', g)
+
+    # 操作符不能在整个表达式首部
+    with test.raises(ParseError) :
+        n._processBlock('add Y', g)
+
+    # 两个操作符并排出现
+    with test.raises(ParseError) :
+        n._processBlock('(a add b) add mul c', g)
+
+    # 两个合法变量同时出现
+    with test.raises(ParseError) :
+        n._processBlock('X:5 Y:[1, 2] add Z', g)
+    with test.raises(ParseError) :
+        n._processBlock('X:5 add Y:[1, 2] Z', g)
+
+    # 只有操作符可以使用as来命名
+    with test.raises(ParseError) :
+        n._processBlock(':5 as X', g)
+
+    # 非法名称
+    with test.raises(ParseError) :
+        n._processBlock('X add Y as 5', g)
+
+    # 层连接符放在首部
+    with test.raises(ParseError) :
+        n._processBlock('->', g)
+
+    # 终止符放在首部
+    with test.raises(ParseError) :
+        n._processBlock('## add X', g)
+    
+    g = graph()
+
+    n._processBlock('X:(1) add Y:[[1,2], [3.4, 0]] -> sub Z -> ##', g)
+    assert isinstance( g.nodes[0].data, var )
+    assert isinstance( g.nodes[0].data.data, np.ndarray)
+    assert g.nodes[0].data.data[0] == 0
+    assert isinstance( g.nodes[1].data, add )
+    assert isinstance( g.nodes[2].data, var )
+    assert isinstance( g.nodes[2].data.data, np.ndarray )
+    assert g.nodes[2].data.data[0][0] == 1
+    assert g.nodes[2].data.data[1][1] == 0
+    assert isinstance( g.nodes[5].data, rest )
+    assert g.nodes[5].data.name == None
+
+    g = graph()
+    n._processBlock('5 add 10 as u1', g)
+    assert g.nodes[1].data.name == 'u1'
+    n._processBlock('6 sub 19 as u2', g)
+    assert g.nodes[4].data.name == 'u2'
+    n._processBlock('u1 mul u2 -> div 3 -> res:##', g)
+    
+    [res] = g.fprop()
+    assert res.data == -65
+
+    g = graph()
+    np.random.seed(1)
+    n._processBlock('X:[[1,2], [3,4]] add Y:randn(2, 2) sub :[-1, -2] -> div 0.01 -> ##', g)
+    [res] = g.fprop()
+
+    assert res.data.shape == (2,2)
+
+    assert np.all(res.data == np.array([[362.43453636632415, 338.82435863499245], [347.18282477365443, 492.70313778438293]]))
+
+    g = graph()
+    n._processBlock('5 add 10 as u', g)
+    n._processBlock('6 sub 19 as v', g)
+    n._processBlock('u mul v as t', g)
+    n._processBlock('t div 3 then y:##', g)
+    [res] = g.fprop()
+
+    assert res.data == -65
+
+    g = graph()
+    n._processBlock('5 add 10 as u mul (6 sub 19 as v) as t div 3 then y:##', g)
+    assert g.nodes[1].data.name == 'u'
+    assert g.nodes[4].data.name == 'v'
+    assert g.nodes[6].data.name == 't'
+    assert g.nodes[9].data.name == 'y'
+    [res] = g.fprop()
+
+    assert res.data == -65
+
+    # g = graph()
+    # n._processBlock('a:5 add b:10 as u mul (c:6 sub d:19 as v) as w div e:3 as t then y:##', g)
+    # print(g)
+
+def test_nous_parse() :
+    n = nous('''
+
+    # 这里是注释
+    5 add 10 as u
+    6 sub 19 as v
+
+        # 下面三个是一行
+        u mul v ->
+        div 3 as t
+
+    # 结束
+    t -> y:##
+    ''')
+
+    g = n.parse()
+    [res] = g.fprop()
+
+    assert res.data == -65

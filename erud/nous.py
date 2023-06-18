@@ -43,6 +43,10 @@ class nous :
     # 计算图
     __g : graph
 
+    @property
+    def g (self) :
+        return self.__g
+
     def __init__ (self, code = '') :
         self.__code = code
 
@@ -131,7 +135,7 @@ class nous :
         if not self._isOperator(el) :
             raise ParseError('"%s" is a illegal operator.' % (el))
         
-        return node(self.__operators[el]())
+        return node(self.__operators[el](), code = el)
     
 
     # 是否是合法引用
@@ -329,7 +333,7 @@ class nous :
             else :
                 raise ParseError('Can not create variable from "%s".' % (el))
         
-        n = node(var(value))
+        n = node(var(value), code = el)
         self._setOperatorName(n, name)
 
         return n
@@ -380,7 +384,7 @@ class nous :
             else :
                 raise ParseError('"%s" is a illegal operator of rest.' % (el))
         
-        n = node(rest())
+        n = node(rest(), code = el)
         self._setOperatorName(n, name)
 
         return n
@@ -388,9 +392,9 @@ class nous :
 
 
     # 处理块逻辑，并返回解析块的计算图的汇点（终点）
-    # str: str 代码子串
+    # line : str 代码子串
     # g: 计算图
-    def _processBlock(self, str:str, g:graph) :
+    def _processBlock(self, line:str, g:graph) :
         # 左操作数
         left : node = None
         # 右操作数
@@ -398,7 +402,7 @@ class nous :
         # 操作符
         opt : node = None
 
-        rest_str = str
+        rest_str = line
         el, rest_str = self._getNextEl(rest_str)
         
         # 对于每一层（由then或->分隔的部分），可能的结构由以下几种
@@ -416,14 +420,14 @@ class nous :
                 
                 # 左操作数和子块并列，中间没有操作符
                 elif opt is None :
-                    raise ParseError('Can not arrange two of both variable and block in one place.')
+                    raise ParseError('Can not arrange two of both variable (%s, %s) and block in one place.' % (left.code, el))
 
                 elif right is None :
                     right = self._processBlock(el, g)
 
                 # 右操作数和子块并列，中间没有操作符
                 else :
-                    raise ParseError('Can not arrange two of both variable and block in one place.')
+                    raise ParseError('Can not arrange two of both variable (%s, %s) and block in one place.' % (right.code, el))
 
             # 判断是否是操作符
             # elif el in self.__options.keys() :
@@ -438,19 +442,19 @@ class nous :
                 
                 # 两个操作符并排出现
                 elif right is None :
-                    raise ParseError('Can not arrange two operators in one place.')
+                    raise ParseError('Can not arrange two operators (%s, %s) in one place.' % (opt.code, el))
 
                 # 如果左操作数、右操作数和操作符同时存在，此时又出现一个新的操作符，则满足结构4
-                # else : 
-                #     g.insertNode(left)
-                #     g.insertNode(right)
-                #     g.insertNode(opt)
-                #     g.addEdge(left, opt)
-                #     g.addEdge(right, opt)
-                #     # 操作符成为下一层的左操作数
-                #     left = opt
-                #     opt = self.__options[el]()
-                #     right = None
+                else : 
+                    g.insertNode(opt)
+                    if not g.hasNode(right) :
+                        g.insertNode(right)
+                    g.addEdge(left, opt)
+                    g.addEdge(right, opt)
+                    # 操作符成为下一层的左操作数
+                    left = opt
+                    opt = self._makeOperator(el)
+                    right = None
                 
             # 判断是否是合法引用
             # 引用通常来自于已经命名的操作符（通过关键字as）或者已经命名的变量
@@ -458,8 +462,9 @@ class nous :
             elif self._isReference(el, g) :
                 if left is None :
                     left = self._getReference(el, g)
+                # 引用只能为操作数
                 elif opt is None :
-                    opt = self._getReference(el, g)
+                    raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
                 elif right is None :
                     right = self._getReference(el, g)
 
@@ -472,27 +477,27 @@ class nous :
                     g.insertNode(left)
                 # 两个变量并排出现
                 elif opt is None :
-                    raise ParseError('Can not arrange two variables in one place.')
+                    raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
                 elif right is None :
                     right = self._makeVariable(el)
                     # 操作符、操作数齐全，生成一层操作
-                    g.insertNode(opt)
-                    g.addEdge(left, opt)
-                    g.insertNode(right)
-                    g.addEdge(right, opt)
-                    # 操作符成为下一层的左操作数
-                    left = opt
-                    opt = None
-                    right = None
+                    # g.insertNode(opt)
+                    # g.addEdge(left, opt)
+                    # g.insertNode(right)
+                    # g.addEdge(right, opt)
+                    # # 操作符成为下一层的左操作数
+                    # left = opt
+                    # opt = None
+                    # right = None
                 else :
-                    raise ParseError('Can not arrange two variables in one place.')
+                    raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (right.code, el))
             
             # 对操作符命名
             elif el == 'as' :
                 # 获取下一个元素
                 el, rest_str = self._getNextEl(rest_str)
 
-                if opt is not None :
+                if opt is None :
                     raise ParseError('Only operator can be named by "as".')
                 
                 # 非法的命名
@@ -513,8 +518,9 @@ class nous :
                 elif opt is not None :
                     g.insertNode(opt)
                     g.addEdge(left, opt)
-                    if right is not None :
-                        g.insertNode(right)
+                    if right is not None:
+                        if not g.hasNode(right) :
+                            g.insertNode(right)
                         g.addEdge(right, opt)
                     left = opt
                     opt = None
@@ -539,13 +545,37 @@ class nous :
             g.insertNode(opt)
             g.addEdge(left, opt)
             if right is not None :
-                g.insertNode(right)
+                if not g.hasNode(right) :
+                    g.insertNode(right)
                 g.addEdge(right, opt)
             left = opt
         
         return left
         
 
+    # 解析代码
+    def parse(self, code : str = None) :
+        if code is not None :
+            self.__code = code
+        self.__g = graph()
 
+        lines = self.__code.split("\n")
+
+        block = ''
+        for b in lines :
+            b = b.strip()
+
+            # 以#开头的是注释
+            if b.startswith('#') :
+                continue
+
+            block += ' ' + b
+
+            # 以层连接符结尾的视为块内换行
+            if not ( b.endswith('->') or b.endswith('then') ) :
+                self._processBlock(block, self.__g)
+                block = ''
+        
+        return self.g
 
 

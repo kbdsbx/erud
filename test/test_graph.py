@@ -6,8 +6,8 @@ import random
 
 import pytest
 
-def setup_function(self) :
-    print(self.__name__ + ' printed out:')
+# def setup_function(self) :
+    # print(self.__name__ + ' printed out:')
 
 # 插入节点
 def test_graph_insert_node() :
@@ -15,17 +15,17 @@ def test_graph_insert_node() :
     n1 = node()
     g.insertNode(n1)
 
-    assert g.hasNode == 1
+    assert g.nodeCount== 1
 
     n2 = node()
     g.insertNode(n2)
 
-    assert g.hasNode == 2
+    assert g.nodeCount == 2
 
     n3 = node()
     g.insertNode(n3)
 
-    assert g.hasNode == 3
+    assert g.nodeCount == 3
 
     with pytest.raises(NodeRepeatError) :
         # 重复插入节点
@@ -38,7 +38,7 @@ def test_graph_insert_node() :
 # 添加边
 def test_graph_add_edge() :
     g = graph()
-    assert g.hasNode == 0
+    assert g.nodeCount == 0
     n1 = node(1)
     n2 = node(2)
     n3 = node(3)
@@ -54,7 +54,7 @@ def test_graph_add_edge() :
     g.insertNode(n3)
     g.insertNode(n4)
 
-    assert g.hasNode == 4
+    assert g.nodeCount == 4
 
     g.addEdge(n1, n3)
 
