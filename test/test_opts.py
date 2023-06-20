@@ -2,6 +2,7 @@ from erud.opts.add import add
 from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
+from erud.opts.matmul import matmul
 import numpy as np
 import pytest as test
 
@@ -242,3 +243,23 @@ def test_operator_mul () :
        [[14, 66]],
        [[ 4, 26]]]))
 
+# 矩阵乘法
+def test_operator_matmul () :
+    m = matmul()
+
+    x = np.array([[1, 4], [2, 5], [3, 6]])
+    assert x.shape == (3, 2)
+
+    y = np.array([[7, 8, 9], [10, 11, 12]])
+    assert y.shape == (2, 3)
+
+    z = m.fprop(x, y)
+    assert z.shape == (3, 3)
+    assert np.all(z == np.array([[47, 52, 57], [64, 71, 78], [81, 90, 99]]))
+
+    dz = np.array([[5, 4, 3], [2, 1, 0], [-1, -2, -3]])
+
+    # 矩阵乘法的梯度
+    dx, dy = m.bprop(dz)
+    assert np.all(dx == np.array([[94, 130], [22, 31], [-50, -68]]))
+    assert np.all(dy == np.array([[6, 0, -6], [24, 9, -6]]))

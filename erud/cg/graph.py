@@ -349,6 +349,24 @@ class ComputationGraph:
         # 反向传播无需返回值，因为最后对常数或变量求导的值都为0，整体偏导即为0
         
 
+    # 设置值
+    # 根据node.data.name查找并设置节点的值
+    def setData (self, name : str, value : any) :
+        for n in self.__nodes :
+            if n.data.name == name :
+                n.data.data = value
+                break
+        else :
+            raise NodeNotFindError('Can not find node named %s.' % (name))
+    
+    # 获取值
+    def getData (self, name: str ) -> any :
+        for n in self.__nodes :
+            if n.data.name == name :
+                return n.data.data
+        else :
+            raise NodeNotFindError('Can not find node named %s.' % (name))
+
                 
 
     # 十字链表法输出计算图结构

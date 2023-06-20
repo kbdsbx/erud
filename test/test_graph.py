@@ -3,6 +3,7 @@ from erud.cg.node import ComputationNode as node
 from erud.errors import *
 import numpy as np
 import random
+from erud.nous import nous
 
 import pytest
 
@@ -456,3 +457,27 @@ def test_bprop () :
     
     print('The end of "w" is %s.' % (w.data))
     
+# 设置或获取值
+def test_set_data () :
+    n = nous(
+        '''
+        X add Y:6 mul :12 -> J:$$
+        '''
+    )
+    
+    g = n.parse()
+
+    assert g.getData('Y') == 6
+    assert g.getData('X') == None
+    assert g.getData('J') == None
+
+    with pytest.raises(NodeNotFindError) :
+        g.setData('Z', 12)
+    
+    g.setData('X', 6)
+    assert g.nodes[0].data.data == 6
+
+    [res] = g.fprop()
+
+    assert res.data == 144
+    assert g.getData('J') == 144

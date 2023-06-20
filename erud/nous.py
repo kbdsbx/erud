@@ -5,6 +5,7 @@ from erud.opts.add import add
 from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
+from erud.opts.matmul import matmul
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -17,7 +18,8 @@ class nous :
         'add' : add,
         'sub' : sub,
         'mul' : mul,
-        'div' : div
+        'div' : div,
+        'matmul': matmul
     }
 
     # 所有语句关键词
@@ -590,4 +592,12 @@ class nous :
         
         return self.g
 
+
+    # 注册新的操作符，如果有同名操作符则覆盖
+    def registerOperator (self, name : str, class_type) :
+        self.__operators[name] = class_type
+    
+    # 注册新的初始化函数，如果有同名函数则覆盖
+    def registerInitFunc (self, name : str, func ) :
+        self.__init_func[name] = func
 
