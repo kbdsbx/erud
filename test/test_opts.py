@@ -3,6 +3,8 @@ from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
 from erud.opts.matmul import matmul
+from erud.opts.relu import relu
+from erud.opts.sigmoid import sigmoid
 import numpy as np
 import pytest as test
 
@@ -263,3 +265,24 @@ def test_operator_matmul () :
     dx, dy = m.bprop(dz)
     assert np.all(dx == np.array([[94, 130], [22, 31], [-50, -68]]))
     assert np.all(dy == np.array([[6, 0, -6], [24, 9, -6]]))
+
+# relu
+def test_operator_relu() :
+    opt = relu()
+
+    assert opt.fprop(5) == 5
+    assert np.all(opt.bprop(15) == [15])
+    assert opt.fprop(-5) == 0
+    assert np.all(opt.bprop(15) == [0])
+    assert np.all(opt.fprop(np.array([[1, -4], [3, 0]])) == np.array([[1, 0], [3, 0]]))
+    assert np.all(opt.bprop(np.array([[5, 3], [-6, 0]])) == np.array([[5, 0], [-6, 0]]))
+
+# sigmoid
+def test_operator_sigmoid() :
+    opt = sigmoid()
+
+    assert opt.fprop(0) == 0.5
+    assert np.all(opt.bprop(4) == [1])
+
+    assert opt.fprop(3) == 0.9525741268224334
+    assert np.all(opt.bprop(4) == [0.180706638923648])

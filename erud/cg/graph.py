@@ -367,7 +367,14 @@ class ComputationGraph:
         else :
             raise NodeNotFindError('Can not find node named %s.' % (name))
 
-                
+    # 设置更新函数
+    def setUpdateFunc(self, name : str, func : any) :
+        for n in self.__nodes :
+            if n.data.name == name :
+                n.data.update_func = func
+                break
+        else :
+            raise NodeNotFindError('Can not find node named %s.' % (name))
 
     # 十字链表法输出计算图结构
     def __str__ (self) :

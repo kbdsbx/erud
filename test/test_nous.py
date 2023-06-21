@@ -443,11 +443,21 @@ def test_nous_parse() :
 
     assert res.data == -65
 
-    n = nous('''
     # X被多次引用计算
+    n = nous('''
     X:5 add X mul X sub X mul X -> $$
     ''')
 
     [res] = n.parse().fprop()
 
     assert res.data == 225
+
+    # 测试一元运算符
+    n = nous(
+        '''
+        5 add -10 -> relu -> sigmoid -> J:$$
+        '''
+    )
+    g = n.parse()
+    g.fprop()
+    assert g.getData('J') == 0.5

@@ -5,7 +5,12 @@ from erud.opts.add import add
 from erud.opts.sub import sub
 from erud.opts.mul import mul
 from erud.opts.div import div
+from erud.opts.sum import sum
 from erud.opts.matmul import matmul
+from erud.opts.relu import relu
+from erud.opts.sigmoid import sigmoid
+from erud.opts.tanh import tanh
+from erud.opts.cross_entropy import cross_entropy
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -19,7 +24,12 @@ class nous :
         'sub' : sub,
         'mul' : mul,
         'div' : div,
-        'matmul': matmul
+        'sum' : sum,
+        'matmul': matmul,
+        'relu' : relu,
+        'sigmoid' : sigmoid,
+        'tanh' : tanh,
+        'cross_entropy' : cross_entropy,
     }
 
     # 所有语句关键词

@@ -26,23 +26,24 @@
     组图阶段只存储“操作”，留一个或者两个缓存单位空着，正向传播的时候顺便计算要反向传播的变量，然后存在单位里，等反向传播的时候取出来用
 
     * 基本二元运算
-        * 加（完成）
-        * 减（完成）
-        * 乘（完成）
-        * 除（完成）
-        * 矩阵乘（完成）
+        * 加add（完成）
+        * 减sum（完成）
+        * 乘mul（完成）
+        * 除div（完成）
+        * 矩阵乘matmul（完成）
         * ...
     * 复合二元操作
         * 卷积
-        * 交叉熵
+        * 交叉熵cross_entropy（完成）
         * ...
     * 基本一元运算
         * 次方
-        * 张量求和
+        * 张量求和sum（完成）
         * ...
     * 复合一元操作
-        * relu
-        * tanh
+        * relu（完成）
+        * sigmoid（完成）
+        * tanh（完成）
         * 修改变量的维度
         * ...
     * 复合三元操作
@@ -246,7 +247,7 @@ W1 then sqr then sum then plus C then times LAMBDA then plus J then REST
 
 # corss_entropy(sigmoid(relu(relu(relu(relu(X * W1 + B1) * W2 + B2) * W3 + B3) * W4 + B4)))
 graph = '''
-X:(1000, 10) matmul W1:r(10, 50) -> add B1:z(40) -> relu -> matmul W2:z(40, 20) -> add B2:z(20) -> relu -> matmul W3:r(20, 10) -> add B3:z(10) -> matmul W4:r(10, 1) -> add B4:z(1) -> sigmoid -> corss_entropy y:(1000) -> J:$$
+X:(1000, 10) matmul W1:r(10, 50) -> add B1:z(40) -> relu -> matmul W2:z(40, 20) -> add B2:z(20) -> relu -> matmul W3:r(20, 10) -> add B3:z(10) -> matmul W4:r(10, 1) -> add B4:z(1) -> sigmoid -> cross_entropy y:(1000) -> J:$$
 '''
 
 # rest = [(5 + 10) * (6 - 19) / 3 ] / (-65) - 1
@@ -440,6 +441,12 @@ g.setData('X', np.random.randn(4,3,2))
 w1 = g.getData('W1')
 # 获取运算结果J
 j = g.getData('J')
+```
+
+设置学习参数的自动更新函数
+```python
+rate = 0.01
+g.setUpdateFunc('W1', lambda z, dz : z - rate * dz)
 ```
 
 ### 目前完成的功能
