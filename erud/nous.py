@@ -9,6 +9,9 @@ from erud.opts.sum import sum
 from erud.opts.matmul import matmul
 from erud.opts.relu import relu
 from erud.opts.sigmoid import sigmoid
+from erud.opts.L1 import L1
+from erud.opts.L2 import L2
+from erud.opts.softmax import softmax
 from erud.opts.tanh import tanh
 from erud.opts.cross_entropy import cross_entropy
 from erud.tensor.var import var
@@ -28,6 +31,9 @@ class nous :
         'matmul': matmul,
         'relu' : relu,
         'sigmoid' : sigmoid,
+        'L1' : L1,
+        'L2' : L2,
+        'softmax' : softmax,
         'tanh' : tanh,
         'cross_entropy' : cross_entropy,
     }
@@ -285,7 +291,10 @@ class nous :
             return self.__init_func[f](tu)
         
         if self._isNumber(el) :
-            return float(el)
+            if el.find('.') == -1 :
+                return int(el)
+            else :
+                return float(el)
         
         if self._isTensor(el) :
             return np.array(eval(el))

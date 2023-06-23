@@ -5,8 +5,11 @@ from erud.opts.div import div
 from erud.opts.matmul import matmul
 from erud.opts.relu import relu
 from erud.opts.sigmoid import sigmoid
+from erud.opts.softmax import softmax
 import numpy as np
 import pytest as test
+
+np.set_printoptions(precision=99)
 
 # 加法
 def test_operator_add () :
@@ -283,6 +286,36 @@ def test_operator_sigmoid() :
 
     assert opt.fprop(0) == 0.5
     assert np.all(opt.bprop(4) == [1])
-
+    
     assert opt.fprop(3) == 0.9525741268224334
     assert np.all(opt.bprop(4) == [0.180706638923648])
+
+    assert np.all(opt.fprop(np.array([1,2,3])) == np.array([0.7310585786300049, 0.8807970779778823, 0.9525741268224334]))
+
+    assert np.all(opt.bprop(np.array([1,1,1]))[0] == np.array([0.19661193324148185, 0.10499358540350662, 0.045176659730912]))
+
+
+from erud.opts.cross_entropy import cross_entropy
+
+# softmax
+def test_softmax() :
+    z = np.array([3, 1, -3])
+    y = np.array([1, 0, 0])
+    softmax_opt = softmax()
+    a = softmax_opt.fprop(z, 0)
+    cross_entropy_opt = cross_entropy()
+    j = cross_entropy_opt.fprop(a, y)
+
+    assert np.all(a == np.array([0.8788782427321509, 0.11894323591065209, 0.002178521357197023]))
+
+    assert np.all(j == np.array([0.1291089088298506, 0.1266332236921202, 0.002180897786878049]))
+
+    [da, _] = cross_entropy_opt.bprop(np.ones(3))
+
+    assert np.all(da == np.array([-1.137814035413279, 1.1350006500813723, 1.002183277674239 ]))
+
+    [dz, _] = softmax_opt.bprop(da)
+
+    assert np.all(dz == np.array([-0.2416897266247951,  0.23762678570983872, 0.004062940914956294]))
+    
+

@@ -13,6 +13,13 @@ class payload :
         self.__name = n
         return n
     
+    # 缓存用于调试
+    
+    # 前向传播的计算缓存
+    fcache : any = None
+    # 反向传播的计算缓存
+    bcache : list[any] = None
+    
     # 亟待子类实现的前向传播方法
     # 提供多个变量，提供变量的个数取决于指向此节点的路径的个数
     # 返回一个变量，通常为提供给下一层节点的计算值
