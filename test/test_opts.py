@@ -317,5 +317,58 @@ def test_softmax() :
     [dz, _] = softmax_opt.bprop(da)
 
     assert np.all(dz == np.array([-0.2416897266247951,  0.23762678570983872, 0.004062940914956294]))
+
+from erud.opts.cost import cost
+from erud.nous import nous
+
+# cost
+def test_cost() :
+    w = np.array([[1], [2]])
+    b = 2
+    X = np.array([[1,2], [3,4]])
+    Y = np.array([[1,0]])
+    sigmoid_opt = sigmoid()
+    cross_entropy_opt = cross_entropy()
+    cost_opt = cost()
+
+    A = sigmoid_opt.fprop(np.dot(w.T, X) + b)
+    j = cross_entropy_opt.fprop(A, Y)
+    c = cost_opt.fprop(j)
+
+    assert c == 6.000064773192205
+
+    # ↑
+    # 上下等价
+    # ↓
+
+    g = nous(
+        """
+        W:[[1, 2]] matmul X:[[1, 2], [3, 4]] add b:2 ->
+        sigmoid ->
+        cross_entropy Y:[[1,0]] ->
+        cost ->
+        j:$$
+        """
+    ).parse()
+
+    # 前向传播
+
+    g.fprop()
+    c = g.getData('j')
+    assert c == 6.000064773192205
+
+    # 反向传播计算梯度
+
+    def update_w_func (w, dw) :
+        assert np.all(dw == np.array([[0.9999321585374046, 1.999802619786816 ]]))
+    def update_b_func (b, db) :
+        assert db == 0.4999352306247057
+
+    # 给W和B设置更新参数，但此处不更新而是断言dw和db的值是否正确
+    g.setUpdateFunc('W', update_w_func )
+    g.setUpdateFunc('b', update_b_func )
+
+    g.bprop()
+
     
 

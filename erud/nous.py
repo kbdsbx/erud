@@ -14,10 +14,14 @@ from erud.opts.L2 import L2
 from erud.opts.softmax import softmax
 from erud.opts.tanh import tanh
 from erud.opts.cross_entropy import cross_entropy
+from erud.opts.cost import cost
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
 import re
+
+from erud.opts_extend.accuracy import accuracy
+from erud.opts_extend.threshold import threshold
 
 # 解析代码，构造计算图
 class nous :
@@ -36,6 +40,10 @@ class nous :
         'softmax' : softmax,
         'tanh' : tanh,
         'cross_entropy' : cross_entropy,
+        'cost' : cost,
+
+        'accuracy' : accuracy,
+        'threshold' : threshold,
     }
 
     # 所有语句关键词

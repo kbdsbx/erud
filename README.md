@@ -41,6 +41,7 @@
     * 基本一元运算
         * 次方（用其他方式代替）
         * 张量求和sum（完成）
+        * 总代价cost（完成）
         * ...
     * 复合一元操作
         * relu（完成）
@@ -468,3 +469,80 @@ g.setUpdateFunc('W1', lambda z, dz : z - rate * dz)
 8. 实现nous语言解释器，能够将nous代码解释为计算图
 9. 自定义操作符
 10. 自定义初始化类
+
+# 示例
+
+### 浅层神经网络
+
+感谢吴恩达深度学习课程课后实现提供的数据集，全部代码见 `\test\test_logistic_regression.py`
+
+浅层神经网络是一种简单的神经网络，只有一层参数层以及一层激活层，使用交叉熵函数计算代价
+
+训练阶段：
+
+```python
+# 迭代次数
+num_iterations = 1000
+# 学习率
+rate = 0.005
+
+# 每个图片样本有为64 * 64 * 3 = 12288个参数，所以W被初始化为(1, 12288)
+# 一共有209个样本
+# 偏置参数b被初始化为0，所有样本共有一个偏置
+# 使用交叉熵函数与标签集Y计算各个样本代价，并由cost函数计算所有样本总代价
+# 最终代价存储在终止符J中
+g = nous('''
+W:zeros(1, 12288) matmul X:(12288, 209) add b:0 -> sigmoid as temp -> cross_entropy Y -> cost -> J:$$
+''').parse()
+
+# 给样本X赋值
+g.setData('X', train_set_x)
+# 给标签Y赋值
+g.setData('Y', train_set_y_orig)
+# 更新参数的方法，w := w- rate * dj/dw；b := b - rate * dj/db
+g.setUpdateFunc('W', lambda w, dw : w - rate * dw)
+g.setUpdateFunc('b', lambda b, db : b - rate * db)
+
+# 循环计算n次
+for i in range(num_iterations) :
+
+    # 先执行前向传播
+    g.fprop()
+    # 再执行反向传播
+    g.bprop()
+    # 反复多次
+
+    if i % 100 == 0 :
+        print('Cost after iteration %i : %f' % (i, g.getData('J') ) )
+```
+
+验证阶段：
+
+验证阶段可以新建一个计算图，并把之前计算图中的参数传递给新的计算图进行计算，也可以在老的计算图上进行计算
+
+```python
+# 新建一个计算图
+# 此计算图只为了计算神经网络准确率，故而使用了非正规操作threshold和accuracy，这两个操作都不实现反向传播
+# threshold阈值操作一般跟在sigmoid后边，大于阈值为1，小于阈值为0
+# accuracy计算yhat与y之间数据相同的比例，目前只能计算逻辑回归函数的值，有待进一步完善
+g1 = nous('''
+W matmul X add b -> sigmoid -> threshold 0.5 -> accuracy Y -> J:$$
+''').parse()
+
+# 将图g中学习好的参数传入新的计算图g1
+g1.setData('W', g.getData('W'))
+g1.setData('b', g.getData('b'))
+
+# 计算训练精准率
+g1.setData('X', train_set_x)
+g1.setData('Y', train_set_y_orig)
+g1.fprop()
+print('train accuracy: %s' %(g1.getData('J')))
+
+# 计算测试精准率
+g1.setData('X', test_set_x)
+g1.setData('Y', test_set_y_orig)
+g1.fprop()
+print('test accuracy: %s' %(g1.getData('J')))
+
+```

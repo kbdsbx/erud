@@ -38,7 +38,9 @@ class var (payload) :
     def bprop(self, dz = None) -> list[any]:
         # 反向传播更新参数
         if dz is not None and self.__update_func is not None :
-            self.__data = self.__update_func( self.__data, dz )
+            res = self.__update_func( self.__data, dz )
+            if res is not None :
+                self.__data = res
 
         if isinstance(self.__data, np.ndarray) :
             return [np.zeros_like(self.__data)]
