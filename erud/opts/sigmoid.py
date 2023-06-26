@@ -7,7 +7,7 @@ class sigmoid(payload) :
     # a = 1 / (1 + e^-x)
     def fprop(self, x) -> any :
         # 缓存中间变量用于反向传播
-        self.__a = 1 / ( 1 + np.exp(-x))
+        self.__a = 1. / ( 1. + np.exp(-x))
 
         return self.__a
     

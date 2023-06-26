@@ -606,6 +606,10 @@ class nous :
         for b in lines :
             b = b.strip()
 
+            # 空行跳过
+            if b == '' :
+                continue
+
             # 以#开头的是注释
             if b.startswith('#') :
                 continue

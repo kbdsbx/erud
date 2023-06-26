@@ -546,3 +546,33 @@ g1.fprop()
 print('test accuracy: %s' %(g1.getData('J')))
 
 ```
+
+# 深层神经网络
+
+样本没变，全部代码见 `\test\test_deep_neural_network.py`
+
+与浅层神经网络步骤一致，不同的是搭建计算图以及赋值的数量不同
+```python
+g = nous('''
+X:(209, 12288) ->
+
+    matmul W1:(12288, 20) add b1:(20) -> relu ->
+    matmul W2:(20, 7) add b2:(7) -> relu ->
+    matmul W3:(7, 5) add b3:(5) -> relu ->
+    matmul W4:(5, 1) add b4:(1) -> sigmoid ->
+
+cross_entropy Y:(209, 1) -> cost -> J:$$
+''').parse()
+
+```
+
+209个样本经过四层神经网络，每层分别有12288、20、7、5个神经元，前三层使用`relu`激活函数，最后一层使用`sigmoid`激活函数，得到标签Yhat为`(209, 1)`向量，最后计算总代价J
+
+初始化参数改为正态分布初始化
+
+```python
+g.setData('W1', np.random.randn(12288, 20) / np.sqrt(12288))
+g.setData('W2', np.random.randn(20, 7) / np.sqrt(20))
+g.setData('W3', np.random.randn(7, 5) / np.sqrt(7))
+g.setData('W4', np.random.randn(5, 1) / np.sqrt(5))
+```

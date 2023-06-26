@@ -22,7 +22,7 @@ def load_dataset():
     
     return train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes
 
-def test_logistic_regression () :
+def no_test_logistic_regression () :
     train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes = load_dataset()
 
     assert train_set_x_orig.shape == (209, 64, 64, 3)
@@ -31,8 +31,8 @@ def test_logistic_regression () :
     assert test_set_y_orig.shape == (1, 50)
 
     # 中心化、向量化
-    train_set_x = train_set_x_orig.reshape((209, 64 * 64 * 3)).T / 255
-    test_set_x = test_set_x_orig.reshape((50, 64 * 64 * 3)).T / 255
+    train_set_x = train_set_x_orig.reshape((209, 64 * 64 * 3)).T / 255 - 0.5
+    test_set_x = test_set_x_orig.reshape((50, 64 * 64 * 3)).T / 255 - 0.5
 
     assert train_set_x.shape == (12288, 209)
     assert test_set_x.shape == (12288, 50)

@@ -380,15 +380,15 @@ class ComputationGraph:
     def __str__ (self) :
         str = "\n"
         for node in self.__nodes :
-            str += "| %s |\t" %(node.data)
+            str += "| %s |\t" %(node.code)
             p = node.fFirstEdge
             while p != None:
-                str += "[->%s] " %(p.fNode.data)
+                str += "[->%s] " %(p.fNode.code )
                 p = p.fNextEdge
 
             p = node.bFirstEdge
             while p != None:
-                str += "[<-%s] " %(p.bNode.data)
+                str += "[<-%s] " %(p.bNode.code )
                 p = p.bNextEdge
 
             str += "\n"

@@ -6,7 +6,7 @@ class ComputationNode :
     __data : payload = None
 
     #### 代码
-    __code : str = None
+    __code : str = ''
 
     @property
     def data (self) :
