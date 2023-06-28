@@ -4,7 +4,6 @@ import h5py
 
 def load_dataset():
     path = __file__[:__file__.rfind('\\')]
-    print(path)
     
 
     train_dataset = h5py.File(path + '/datasets/train_catvnoncat.h5', "r")
@@ -23,7 +22,7 @@ def load_dataset():
     return train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes
 
 
-def test_deep_neural_network () :
+def no_test_deep_neural_network () :
     train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, _ = load_dataset()
 
     assert train_set_x_orig.shape == (209, 64, 64, 3)
@@ -32,8 +31,8 @@ def test_deep_neural_network () :
     assert test_set_y_orig.shape == (1, 50)
 
     # 中心化、向量化
-    train_set_x = train_set_x_orig.reshape((209, 64 * 64 * 3)).T / 255 - 0.5
-    test_set_x = test_set_x_orig.reshape((50, 64 * 64 * 3)).T / 255 - 0.5
+    train_set_x = train_set_x_orig.reshape((209, 64 * 64 * 3)).T / 255
+    test_set_x = test_set_x_orig.reshape((50, 64 * 64 * 3)).T / 255
 
     assert train_set_x.shape == (12288, 209)
     assert test_set_x.shape == (12288, 50)

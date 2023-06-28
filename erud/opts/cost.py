@@ -8,7 +8,7 @@ class cost (payload) :
     def fprop(self, x) -> float :
         r = x
         if isinstance(x, np.ndarray) :
-            r = 1.0 / np.size(x) * np.sum(x)
+            r = 1. / np.size(x) * np.nansum(x)
         
         self.__x = x
 

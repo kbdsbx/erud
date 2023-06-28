@@ -69,10 +69,11 @@ class nous :
 
     # 可用的初始化函数
     __init_func = {
-        '' : (lambda x : np.zeros(x)),
+        '' : (lambda x : np.zeros(tuple(x))),
         'randn' : (lambda x : np.random.randn(*x)),
-        'ones' : (lambda x : np.ones(x)),
-        'zeros' : (lambda x : np.zeros(x))
+        'ones' : (lambda x : np.ones(tuple(x))),
+        'zeros' : (lambda x : np.zeros(tuple(x))),
+        'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2.0 / x[1]))
     }
 
     # 输入语句
@@ -211,7 +212,9 @@ class nous :
     def _isInitFunc(self, el:str) -> bool :
         mp = "|".join(self.__init_func.keys())
         # re.compile(r"^(add|sub|div|mul){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
-        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        # mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s]+?\s*){0,1}\))$", re.U)
+
         return mc.search(el) is not None
 
 
@@ -284,19 +287,66 @@ class nous :
             return True
         
         return False
+    
+
+    # 创建合法参数数组，用于变量的初始化方法
+    # 只允许标量、数组（包括多维数组）、元组三种类型的参数，其他类型比如字符串类型的参数为非法参数
+    def _makeArguments(self, el:str) -> any :
+        args = []
+
+        if el == '' :
+            return args
+
+        p = ''
+        stack = []
+        for s in el :
+            if s == ',' :
+                if len(stack) > 0 :
+                    p += s
+                else :
+                    if p.strip() == '' :
+                        raise ParseError('Parsing code error, can not parse "%s" as legal arguments.' %(el))
+                    args.append(eval(p))
+                    p = ''
+            elif s in '[(':
+                p += s
+                stack.append(s)
+            elif s in '])':
+                b = stack.pop()
+                if (b == '[' and s == ']') or (b == '(' and s == ')') :
+                    p += s
+                else :
+                    raise ParseError('Parsing code error, can not parse "%s" as legal arguments.' %(el))
+            else :
+                p += s
+        
+        if len(stack) != 0 :
+            raise ParseError('Parsing code error, can not parse "%s" as legal arguments.' %(el))
+        
+        if p.strip() == '' :
+            raise ParseError('Parsing code error, can not parse "%s" as legal arguments.' %(el))
+
+        args.append(eval(p))
+        
+        return args
+
+            
 
 
     # 创建合法值，依据元素类型返回张量或标量，如果元素是初始化函数，则执行此函数
     def _makeValue(self, el:str) -> any :
         if self._isInitFunc(el) :
             mp = "|".join(self.__init_func.keys())
-            mc = re.compile(r"^(" + mp + r"){1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+            # mc = re.compile(r"^(" + mp + r"){1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+            mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s-]+?\s*){0,1}\))$", re.U)
             mg= mc.search(el)
             # mg[1] 为方法名
-            # mg[2] 为初始化元组
+            # mg[2] 为初始化参数
             f = mg[1]
-            tu = tuple( int(i) for i in self._stripBrackets( mg[2].rstrip() ).split(',') )
-            return self.__init_func[f](tu)
+            # tu = tuple( int(i) for i in self._stripBrackets( mg[2].rstrip() ).split(',') )
+            arg_str = self._stripBrackets(mg[2])
+            args = self._makeArguments(arg_str)
+            return self.__init_func[f](args)
         
         if self._isNumber(el) :
             if el.find('.') == -1 :

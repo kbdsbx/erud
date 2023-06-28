@@ -99,6 +99,26 @@ def test_nous_get_reference() :
 
     with test.raises(ParseError) :
         n._getReference('X', g)
+    
+
+def test_make_arguments() :
+    n = nous()
+
+    assert n._makeArguments('') == []
+    assert n._makeArguments('(5, 3, 2)') == [(5,3,2)]
+    assert n._makeArguments('5, 3, 2') == [5,3,2]
+    assert n._makeArguments('5, [1, 2], 2') == [5,[1,2],2]
+    assert n._makeArguments('5, [[1,2], [3,4]], 2, (5.5, 7, -10)') == [5,[[1, 2], [3,4]],2, (5.5, 7, -10)]
+
+    with test.raises(NameError) :
+        n._makeArguments('abc')
+
+    with test.raises(ParseError) :
+        n._makeArguments('5,3,')
+
+    with test.raises(ParseError) :
+        n._makeArguments('[1,2],,5.5')
+
 
 def test_is_init_func () :
     n = nous()
@@ -106,9 +126,9 @@ def test_is_init_func () :
     assert n._isInitFunc('randn(5, 3, 2)') == True
     assert n._isInitFunc('randn(1)') == True
     assert n._isInitFunc('add(1, 4)') == False
-    assert n._isInitFunc('randn(1, )') == False
+    assert n._isInitFunc('randn(1, )') == True
     assert n._isInitFunc('randn(1, abc)') == False
-    assert n._isInitFunc('randn(1.1, 5)') == False
+    assert n._isInitFunc('randn(1.1, 5)') == True
 
 def test_is_name() :
     n = nous()
