@@ -7,17 +7,32 @@ class cross_entropy(payload) :
     __y : any
 
     def fprop(self, yhat, y) -> any :
+        # 防止上溢，使yhat in (0, 1)，不包括0和1
+        yhat -= ((yhat == np.ones_like(yhat)) * np.finfo(np.float64).eps)
+        yhat += ((yhat == np.zeros_like(yhat)) * np.finfo(np.float64).eps)
+
         self.__yhat = yhat
         self.__y = y
-
+        
         return -1 * (y * np.log(yhat) + (1. - y) * np.log(1. - yhat))
     
     def bprop(self, dz) -> list[any] :
         _yhat = self.__yhat
         _y = self.__y
+        
+        # # 防止上溢
+        # _yhat -= ((_yhat == np.ones_like(_yhat)) * np.finfo(np.float64).eps)
+        # # 防止下溢
+        # _yhat += ((_yhat == np.zeros_like(_yhat)) * np.finfo(np.float64).eps)
 
-        dyhat = -1 * _y / _yhat + ((1. - _y) / (1. - _yhat))
-        dy = -1 * np.log(_yhat) + np.log(1 - _yhat)
+        if np.any(_yhat <= 0) :
+            print(_yhat)
+
+        if np.any(_yhat >=1) :
+            print(_yhat)
+
+        dyhat = -1. * _y / _yhat + ((1. - _y) / (1. - _yhat))
+        dy = -1. * np.log(_yhat) + np.log(1. - _yhat)
 
         dyhat = dyhat * dz
         dy = dy * dz

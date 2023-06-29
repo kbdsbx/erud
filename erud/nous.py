@@ -15,6 +15,7 @@ from erud.opts.softmax import softmax
 from erud.opts.tanh import tanh
 from erud.opts.cross_entropy import cross_entropy
 from erud.opts.cost import cost
+from erud.opts.dropout import dropout
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -39,6 +40,7 @@ class nous :
         'L2' : L2,
         'softmax' : softmax,
         'tanh' : tanh,
+        'dropout' : dropout,
         'cross_entropy' : cross_entropy,
         'cost' : cost,
 

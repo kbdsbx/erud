@@ -48,6 +48,7 @@
         * sigmoid（完成）
         * tanh（完成）
         * softmax（完成）：softmax需要另一个操作数轴，所以虽然是一元操作，但在nous中的调用方法为``''-> softmax 1 ->''``或``''-> softmax [0,1] ->''``
+        * dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间`-> dropout 0.5 ->`
         * 修改变量的维度
         * ...
     * 复合三元操作
