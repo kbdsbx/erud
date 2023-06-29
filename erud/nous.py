@@ -130,8 +130,12 @@ class nous :
             i += 1
         # 如果整体元素是一体的则一整块都是元素
         else :
-            el = str
+            el = str.strip()
             rest_str = ""
+            # 只去掉一层括号
+            if el.startswith('(') and el.endswith(')') :
+                el = el[1:-1]
+
         
         # 如果所有字符处理完成，栈里依然有括号，则说明表达式尾部缺少对应结束括号
         if 0 != len(stacks) :
@@ -143,7 +147,7 @@ class nous :
         rest_str = rest_str.strip()
         
         # 去掉外层多余小括号
-        el = self._stripBrackets(el)
+        # el = self._stripBrackets(el)
         
         return el, rest_str
 
@@ -154,6 +158,10 @@ class nous :
     def _isBlock(self, el : str) -> bool:
         el = el.strip()
 
+        # 被小括号包裹的一整块元素是子块
+        if el.startswith('(') and el.endswith(')') and self._getNextEl(el)[1] == '':
+            return True
+        # 没有被小括号包裹却由多个元素组成的是子块
         return self._getNextEl(el)[1] != ''
     
     
@@ -265,9 +273,6 @@ class nous :
 
     # 是否是合法值，包括标量、张量和初始化函数
     def _isValue(self, el:str) -> bool :
-        if self._isBlock(el) :
-            return False
-        
         if el in self.__keywords :
             return False
         

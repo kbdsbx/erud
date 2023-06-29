@@ -14,12 +14,13 @@ def test_nous_get_next_el() :
     assert n._getNextEl('X[[1, (2)], [(3), 4]]') == ('X[[1, (2)], [(3), 4]]', '')
     assert n._getNextEl('x:42 error sse') == ('x:42', 'error sse')
     assert n._getNextEl('X:(1000, 10) matmul W1:r(10, 50) -> ') == ('X:(1000, 10)', 'matmul W1:r(10, 50) ->')
-    assert n._getNextEl('(((((test)))))') == ('test', '')
-    assert n._getNextEl('((([((test))])))') == ('[((test))]', '')
-    assert n._getNextEl('(((((test))))) rest') == ('test', 'rest')
-    assert n._getNextEl('((([((test))]))) rest') == ('[((test))]', 'rest')
-    assert n._getNextEl('(a add b) rest') == ('a add b', 'rest')
+    assert n._getNextEl('(((((test)))))') == ('((((test))))', '')
+    assert n._getNextEl('((([((test))])))') == ('(([((test))]))', '')
+    assert n._getNextEl('(((((test))))) rest') == ('(((((test)))))', 'rest')
+    assert n._getNextEl('((([((test))]))) rest') == ('((([((test))])))', 'rest')
+    assert n._getNextEl('(a add b) rest') == ('(a add b)', 'rest')
     assert n._getNextEl('') == ('', '')
+    assert n._getNextEl('(a add b)') == ('a add b', '')
 
     # 错误的表达式无法解析，半个中括号
     with test.raises(ParseError) :
@@ -37,12 +38,14 @@ def test_nous_is_block() :
     assert n._isBlock('X:1122') == False
     assert n._isBlock('X:') == False
     assert n._isBlock('X:[[1, (2)], [(3), 4]]') == False
-    assert n._isBlock('(((a add b)))') == False
+    assert n._isBlock('(((a add b)))') == True
     assert n._isBlock('X:(1000, 10) matmul W1:r(10, 50)') == True
     assert n._isBlock('') == False
-    assert n._isBlock('(((([((test))]))))') == False
+    assert n._isBlock('(((([((test))]))))') == True
     assert n._isBlock('X:rand(10, 15)') == False
     assert n._isBlock('    X[1, 4]') == False
+    assert n._isBlock('(a add b)') == True
+    assert n._isBlock('_1:(5, 2, 4)') == False
 
 def test_nous_is_operator () :
     n = nous ()
@@ -170,6 +173,7 @@ def test_is_value () :
     assert n._isValue('then') == False
     assert n._isValue('add') == False
     assert n._isValue('$$')== False
+    assert n._isValue('_1:(5, 2, 4)') == False
 
 def test_make_value () :
     n = nous()
@@ -481,3 +485,23 @@ def test_nous_parse() :
     g = n.parse()
     g.fprop()
     assert g.getData('J') == 0.5
+
+def test_nous_parse_difficult () :
+    n = nous(
+        '''
+        X:(211, 2) ->
+
+            matmul W1:he((2, 20), 4) add b1:(20) -> relu ->
+            matmul W2:he((20, 3), 40) add b2:(3) -> relu ->
+            matmul W3:he((3, 1), 6) add b3:(1) -> sigmoid ->
+        
+        cross_entropy Y:(211, 1) -> cost as entropy_cost
+
+        # L2 正则
+
+        (1.0 div 2) mul (lambd:0.1 div 2) mul ((W1 mul W1 -> sum) add (W2 mul W2 -> sum) add (W3 mul W3 -> sum)) as l2_reg_cost
+
+        entropy_cost add l2_reg_cost -> J:$$
+        '''
+    ).parse()
+

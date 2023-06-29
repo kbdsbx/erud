@@ -10,14 +10,14 @@ class cross_entropy(payload) :
         self.__yhat = yhat
         self.__y = y
 
-        return -(y * np.log(yhat) + (1. - y) * np.log(1. - yhat))
+        return -1 * (y * np.log(yhat) + (1. - y) * np.log(1. - yhat))
     
     def bprop(self, dz) -> list[any] :
         _yhat = self.__yhat
         _y = self.__y
 
-        dyhat = -(_y / _yhat) + ((1. - _y) / (1. - _yhat))
-        dy = -np.log(_yhat) + np.log(1 - _yhat)
+        dyhat = -1 * _y / _yhat + ((1. - _y) / (1. - _yhat))
+        dy = -1 * np.log(_yhat) + np.log(1 - _yhat)
 
         dyhat = dyhat * dz
         dy = dy * dz

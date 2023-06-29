@@ -321,7 +321,7 @@ class ComputationGraph:
                 args = None
                 p = n.fFirstEdge
                 while p is not None :
-                    if args == None :
+                    if args is None :
                         args = p.carry
                     else :
                         args += p.carry
