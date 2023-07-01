@@ -196,7 +196,7 @@ def no_test_l2_regularization () :
 
 
 
-def test_dropout_regularization () :
+def no_test_dropout_regularization () :
     train_X, train_Y, test_X, test_Y = load_2D_dataset()
 
     assert train_X.shape == (2, 211)

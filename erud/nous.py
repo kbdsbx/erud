@@ -351,6 +351,7 @@ class nous :
             # mg[2] 为初始化参数
             f = mg[1]
             # tu = tuple( int(i) for i in self._stripBrackets( mg[2].rstrip() ).split(',') )
+            # 可能会出问题的地方
             arg_str = self._stripBrackets(mg[2])
             args = self._makeArguments(arg_str)
             return self.__init_func[f](args)
