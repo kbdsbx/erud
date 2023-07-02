@@ -1,5 +1,6 @@
 from erud.cg.payload import payload
 import numpy as np
+from erud._utils import epsilon as eps
 
 # 交叉熵损失函数
 class cross_entropy(payload) :
@@ -8,8 +9,8 @@ class cross_entropy(payload) :
 
     def fprop(self, yhat, y) -> any :
         # 防止上溢，使yhat in (0, 1)，不包括0和1
-        yhat -= ((yhat == np.ones_like(yhat)) * np.finfo(np.float64).eps)
-        yhat += ((yhat == np.zeros_like(yhat)) * np.finfo(np.float64).eps)
+        yhat -= ((yhat == np.ones_like(yhat)) * eps)
+        yhat += ((yhat == np.zeros_like(yhat)) * eps)
 
         self.__yhat = yhat
         self.__y = y

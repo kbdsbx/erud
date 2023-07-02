@@ -370,5 +370,18 @@ def test_cost() :
 
     g.bprop()
 
-    
+from erud.opts.batchnorm import batchnorm
+
+def test_batchnorm() :
+    x = np.array([[1,2],[3,4]])
+    b = batchnorm()
+    z = b.fprop(x)
+
+    assert np.sum(z) == 0.
+    assert np.sum(np.power(z, 2)) == 3.999999968000002
+    [dx] = b.bprop(np.array([[1, 1],[1, 1]]))
+    assert np.all(dx == np.array([[0, 0], [0, 0]]))
+
+
+
 

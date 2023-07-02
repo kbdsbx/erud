@@ -16,6 +16,7 @@ from erud.opts.tanh import tanh
 from erud.opts.cross_entropy import cross_entropy
 from erud.opts.cost import cost
 from erud.opts.dropout import dropout
+from erud.opts.batchnorm import batchnorm
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -41,6 +42,7 @@ class nous :
         'softmax' : softmax,
         'tanh' : tanh,
         'dropout' : dropout,
+        'batchnorm' : batchnorm,
         'cross_entropy' : cross_entropy,
         'cost' : cost,
 
@@ -91,9 +93,9 @@ class nous :
     def __init__ (self, code = '') :
         self.__code = code
 
-    # 去掉外层多余小括号
+    # 去掉一层小括号
     def _stripBrackets(self, el : str) -> str:
-        while el.startswith('(') and el.endswith(')') :
+        if el.startswith('(') and el.endswith(')') :
             el = el[1:-1]
         return el
 
@@ -173,10 +175,17 @@ class nous :
         if el in self.__keywords :
             return False
         
-        if el in self.__operators.keys() :
-            return True
+        # if el in self.__operators.keys() :
+            # return True
         
-        return False
+        # return False
+
+        mp = "|".join(self.__operators.keys())
+        # re.compile(r"^(add|sub|div|mul){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        # mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
+        mc = re.compile(r"^(" + mp + r"){1}(\((\s*[0-9\.e\(\)\[\],\s\-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s\-]+?\s*){0,1}\)){0,1}$", re.U)
+
+        return mc.search(el) is not None
     
 
     # 创建操作符节点
@@ -184,7 +193,20 @@ class nous :
         if not self._isOperator(el) :
             raise ParseError('"%s" is a illegal operator.' % (el))
         
-        return node(self.__operators[el](), code = el)
+        mp = "|".join(self.__operators.keys())
+        mc = re.compile(r"^(" + mp + r"){1}(\((\s*[0-9\.e\(\)\[\],\s\-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s\-]+?\s*){0,1}\)){0,1}$", re.U)
+        mg = mc.search(el)
+        # mg[1] 为操作符名
+        # mg[2] 为初始化参数，可能为空
+        f = mg[1]
+        arg_str = mg[2]
+        if arg_str is None :
+            return node(self.__operators[f](), code = el)
+        else :
+            arg_str = self._stripBrackets(mg[2])
+            args = self._makeArguments(arg_str)
+            return node(self.__operators[f](*args), code = el)
+
     
 
     # 是否是合法引用
@@ -223,7 +245,7 @@ class nous :
         mp = "|".join(self.__init_func.keys())
         # re.compile(r"^(add|sub|div|mul){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
         # mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
-        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s]+?\s*){0,1}\))$", re.U)
+        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s\-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s\-]+?\s*){0,1}\))$", re.U)
 
         return mc.search(el) is not None
 

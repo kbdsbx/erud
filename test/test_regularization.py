@@ -70,7 +70,7 @@ def no_test_none_regularization () :
             matmul W2 add b2 -> relu ->
             matmul W3 add b3 -> sigmoid ->
         
-        threshold 0.5 -> accuracy Y -> J:$$
+        threshold(0.5) -> accuracy Y -> J:$$
         '''
     ).parse()
 
@@ -164,7 +164,7 @@ def no_test_l2_regularization () :
             matmul W2 add b2 -> relu ->
             matmul W3 add b3 -> sigmoid ->
         
-        threshold 0.5 -> accuracy Y -> J:$$
+        threshold(0.5) -> accuracy Y -> J:$$
         '''
     ).parse()
 
@@ -212,8 +212,8 @@ def no_test_dropout_regularization () :
         '''
         X:(211, 2) ->
 
-            matmul W1:he((2, 20), 4) add b1:(20) -> relu -> dropout 0.86 ->
-            matmul W2:he((20, 3), 40) add b2:(3) -> relu -> dropout 0.86 ->
+            matmul W1:he((2, 20), 4) add b1:(20) -> relu -> dropout(0.86) ->
+            matmul W2:he((20, 3), 40) add b2:(3) -> relu -> dropout(0.86) ->
             matmul W3:he((3, 1), 6) add b3:(1) -> sigmoid ->
         
         cross_entropy Y:(211, 1) -> cost -> J:$$
@@ -252,7 +252,7 @@ def no_test_dropout_regularization () :
             matmul W2 add b2 -> relu ->
             matmul W3 add b3 -> sigmoid ->
         
-        threshold 0.5 -> accuracy Y -> J:$$
+        threshold(0.5) -> accuracy Y -> J:$$
         '''
     ).parse()
 

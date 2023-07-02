@@ -92,7 +92,7 @@ def no_test_deep_neural_network () :
         matmul W3 add b3 -> relu ->
         matmul W4 add b4 -> sigmoid ->
     
-    threshold 0.5 -> accuracy Y -> J:$$
+    threshold(0.5) -> accuracy Y -> J:$$
     ''').parse()
     
 

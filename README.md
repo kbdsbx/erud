@@ -12,6 +12,7 @@
 1. 数据：用户或客户传入的样本数据，可能为数量、向量、矩阵或张量等
 1. 参数：用户传入的数据，可能为数量、向量、矩阵或张量等
 1. 变量：用户看不见的数据，隐藏在实现细节里
+1. 控制参数：不参与计算图运算，只是传递给操作符或者初始化函数来改变运算规则
 
 ## 计算图的特征
 
@@ -37,6 +38,7 @@
         * 交叉熵cross_entropy（完成）
         * L1（完成）
         * L2（完成）
+        * sigmoid_cross_entropy : `sigmoid`及其交叉熵的复合函数
         * ...
     * 基本一元运算
         * 次方（用其他方式代替）
@@ -47,12 +49,17 @@
         * relu（完成）
         * sigmoid（完成）
         * tanh（完成）
-        * softmax（完成）：softmax需要另一个操作数轴，所以虽然是一元操作，但在nous中的调用方法为``''-> softmax 1 ->''``或``''-> softmax [0,1] ->''``
-        * dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间`-> dropout 0.5 ->`
+        * softmax（完成）：softmax需要另一个操作数轴，所以虽然是一元操作，但在nous中的调用方法为``-> softmax 1 ->``或``-> softmax [0,1] ->``
+        * <del>dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间`-> dropout 0.5 ->`</del>
+        * batchnorm（完成）
         * 修改变量的维度
         * ...
     * 复合三元操作
         * 也许有...
+    * 带控制参数的一元或多元操作
+        * 新softmax（待改造）：softmax需要一个元组来区分样本集合`X`中，每个样本延哪个轴存放，并根据存放的轴号进行概率计算，调用方法为`-> softmax((1)) ->` 或`-> softmax((0, 1)) ->`
+        * dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间，调用方法改为`-> dropout(0.5) ->`
+        * softmax_cross_entropy : `softmax`及其交叉熵的复合运算符，调用方法为`-> softmax_cross_entropy(1) Y ->`
     
     > 一开始可以搞点基本操作组计算图，组完了再加复合操作做后期优化
 
@@ -563,7 +570,7 @@ for i in range(num_iterations) :
 # threshold阈值操作一般跟在sigmoid后边，大于阈值为1，小于阈值为0
 # accuracy计算yhat与y之间数据相同的比例，目前只能计算逻辑回归函数的值，有待进一步完善
 g1 = nous('''
-W matmul X add b -> sigmoid -> threshold 0.5 -> accuracy Y -> J:$$
+W matmul X add b -> sigmoid -> threshold(0.5) -> accuracy Y -> J:$$
 ''').parse()
 
 # 将图g中学习好的参数传入新的计算图g1

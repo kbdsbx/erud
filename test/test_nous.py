@@ -57,8 +57,12 @@ def test_nous_is_operator () :
     assert n._isOperator('sub') == True
     assert n._isOperator('mul') == True
     assert n._isOperator('div') == True
+    assert n._isOperator('div(1, 2)') == True
+    assert n._isOperator('div((1, 2), [[4, 2], [1, 3]])') == True
+    assert n._isOperator('div(-5, 4, 1e-8)') == True
 
 from erud.cg.node import ComputationNode as node
+from erud.opts_extend.threshold import threshold as threshold
 from erud.opts.add import add
 
 def test_nous_make_operator () :
@@ -67,6 +71,11 @@ def test_nous_make_operator () :
     nd = n._makeOperator('add')
     assert isinstance(nd, node )
     assert isinstance(nd.data, add)
+
+    nd = n._makeOperator('threshold(0.7)')
+    assert isinstance(nd, node)
+    assert isinstance(nd.data, threshold)
+    assert nd.data.threshold == 0.7
 
     with test.raises(ParseError) :
         n._makeOperator('then')
@@ -132,6 +141,10 @@ def test_is_init_func () :
     assert n._isInitFunc('randn(1, )') == True
     assert n._isInitFunc('randn(1, abc)') == False
     assert n._isInitFunc('randn(1.1, 5)') == True
+    assert n._isInitFunc('randn(-1.1, -5)') == True
+    assert n._isInitFunc('randn(-1.1, 1e-8)') == True
+    assert n._isInitFunc('randn(-1.1, 1e-8, [[1,2], [3,4]], (5, 6))') == True
+    assert n._isInitFunc('randn((1, 2), 1e-8, [[1,2], [3,4]], (5, 6))') == True
 
 def test_is_name() :
     n = nous()

@@ -7,13 +7,16 @@ class dropout (payload) :
     # 概率
     __posi : any
 
-    def fprop(self, x, posi) -> any :
+    def __init__(self, posi = 0.5) :
         self.__posi = posi
+
+    def fprop(self, x) -> any :
+        _posi = self.__posi
         
-        mash = np.random.rand(*x.shape) < posi
+        mash = np.random.rand(*x.shape) < _posi
         self.__mash = mash
 
-        return x * mash / posi
+        return x * mash / _posi
     
     def bprop(self, dz) -> list[any] :
         _mash = self.__mash

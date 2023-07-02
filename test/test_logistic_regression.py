@@ -62,7 +62,7 @@ def no_test_logistic_regression () :
     # 测试
 
     g1 = nous('''
-    W matmul X add b -> sigmoid -> threshold 0.5 -> accuracy Y -> J:$$
+    W matmul X add b -> sigmoid -> threshold(0.5) -> accuracy Y -> J:$$
     ''').parse()
 
     g1.setData('X', train_set_x)

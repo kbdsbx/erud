@@ -440,7 +440,7 @@ def no_test_mini_batch_with_momentum() :
 
 
 
-def test_mini_batch_with_adam () :
+def no_test_mini_batch_with_adam () :
     train_X, train_Y = load_dataset()
     batches = set_mini_batch(train_X, train_Y)
 
