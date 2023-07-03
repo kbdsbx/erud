@@ -20,6 +20,7 @@ class cost (payload) :
         dx = 1
         if isinstance(_x, np.ndarray) :
             dx = np.ones_like(_x) / np.size(_x) * dz
+            dx.reshape(_x.shape)
 
         return [dx]
 

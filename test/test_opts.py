@@ -382,6 +382,12 @@ def test_batchnorm() :
     [dx] = b.bprop(np.array([[1, 1],[1, 1]]))
     assert np.all(dx == np.array([[0, 0], [0, 0]]))
 
+from erud.opts_extend.max_index import max_index
+
+def test_max_index() :
+    m = np.array([[1,2], [3,4]])
+    assert np.all(max_index(1).fprop(m) == np.array([1, 1]))
+
 
 
 

@@ -1,8 +1,8 @@
 from erud.cg.payload import payload
 import numpy as np
+from erud.errors import *
 
 class threshold (payload) :
-    __x : any
     __threshold : any
 
     @property
@@ -14,8 +14,7 @@ class threshold (payload) :
 
 
     def fprop(self, x) -> any :
-        self.__x = x
         return x > self.__threshold
     
     def bprop(self, dz) -> list[any] :
-        return [np.zeros_like(self.__x), 0]
+        raise UnsupportedError('Can not call function bprop from "threshold".')

@@ -17,6 +17,7 @@ from erud.opts.cross_entropy import cross_entropy
 from erud.opts.cost import cost
 from erud.opts.dropout import dropout
 from erud.opts.batchnorm import batchnorm
+from erud.opts.softmax_cross_entropy import softmax_cross_entropy
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -24,6 +25,7 @@ import re
 
 from erud.opts_extend.accuracy import accuracy
 from erud.opts_extend.threshold import threshold
+from erud.opts_extend.max_index import max_index
 
 # 解析代码，构造计算图
 class nous :
@@ -44,10 +46,12 @@ class nous :
         'dropout' : dropout,
         'batchnorm' : batchnorm,
         'cross_entropy' : cross_entropy,
+        'softmax_cross_entropy' : softmax_cross_entropy,
         'cost' : cost,
 
         'accuracy' : accuracy,
         'threshold' : threshold,
+        'max_index' : max_index,
     }
 
     # 所有语句关键词
@@ -77,7 +81,8 @@ class nous :
         'randn' : (lambda x : np.random.randn(*x)),
         'ones' : (lambda x : np.ones(tuple(x))),
         'zeros' : (lambda x : np.zeros(tuple(x))),
-        'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2.0 / x[1]))
+        'xavier' : (lambda x : np.random.randn(*x[0]) * np.sqrt(1. / x[1])),
+        'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2. / x[1]))
     }
 
     # 输入语句

@@ -38,7 +38,6 @@
         * 交叉熵cross_entropy（完成）
         * L1（完成）
         * L2（完成）
-        * sigmoid_cross_entropy : `sigmoid`及其交叉熵的复合函数
         * ...
     * 基本一元运算
         * 次方（用其他方式代替）
@@ -59,7 +58,7 @@
     * 带控制参数的一元或多元操作
         * 新softmax（待改造）：softmax需要一个元组来区分样本集合`X`中，每个样本延哪个轴存放，并根据存放的轴号进行概率计算，调用方法为`-> softmax((1)) ->` 或`-> softmax((0, 1)) ->`
         * dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间，调用方法改为`-> dropout(0.5) ->`
-        * softmax_cross_entropy : `softmax`及其交叉熵的复合运算符，调用方法为`-> softmax_cross_entropy(1) Y ->`
+        * softmax_cross_entropy（完成） : `softmax`及其交叉熵的复合运算符，调用方法为`-> softmax_cross_entropy(1) Y ->`
     
     > 一开始可以搞点基本操作组计算图，组完了再加复合操作做后期优化
 
@@ -152,6 +151,8 @@
 ### 调试
 
 目前计算图还没有调试相关的内容，一个可能的想法是添加调试状态标记，并在调试状态下缓存/打印前向传播和反向传播的值
+
+调试需要提上日程，softmax分类测试用例实在是太慢了，需要添加额外的功能来记录计算中数据流经过各个节点的总时间，找到计算图中最花费时间的关键运算，然后才能尝试优化
 
 # 计算图的构建接口
 
@@ -669,3 +670,58 @@ print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
 
 
 ```
+
+### 多分类回归
+
+多分类回归使用one-hot向量、将原本的sigmoid二分类器更改为softmax多分类器并辅佐对应的交叉熵函数。其中应用了mini-batch
+
+测试时使用非标准运算符`max_index`，是`ont-hot`的逆运算，获取`one-hot`向量中最大的值的下标
+
+
+全部代码见`test\test_softmax_multiple_classification.py`
+
+```python
+
+g = erud.nous(
+    '''
+    X:(1080, 12288) ->
+    
+        matmul W1:xavier((12288, 25), 12288) add b1:(25) -> relu ->
+        matmul W2:xavier((25, 12), 25) add b2:(12) -> relu ->
+        matmul W3:xavier((12, 6), 12) add b3:(6) ->
+    
+    softmax_cross_entropy(1) Y:(1080, 6) -> cost -> J:$$
+    '''
+).parse()
+
+...
+
+for i in range(num_iterations) :
+    for b in batches :
+        g.setData('X', b[0].T)
+        g.setData('Y', b[1].T)
+
+        g.fprop()
+        g.bprop()
+
+    if i % 100 == 0 :
+        print("Cost after iteration {}: {}".format(i, g.getData('J')))
+print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
+
+
+# 测试
+gtest = erud.nous(
+    '''
+    X ->
+    
+        matmul W1:xavier((12288, 25), 12288) add b1:(25) -> relu ->
+        matmul W2:xavier((25, 12), 25) add b2:(12) -> relu ->
+        matmul W3:xavier((12, 6), 12) add b3:(6) ->
+    
+    max_index(1) -> accuracy Y -> J:$$
+    '''
+).parse()
+
+
+```
+

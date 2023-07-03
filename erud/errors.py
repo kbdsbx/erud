@@ -18,3 +18,9 @@ class NodeRepeatError (Exception) : ...
 
 # 表达式错误
 class ParseError (Exception) : ...
+
+
+####### 其他异常 ######
+
+# 不支持的功能
+class UnsupportedError (Exception) : ...
