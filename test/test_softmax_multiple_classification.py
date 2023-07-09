@@ -105,6 +105,8 @@ def test_multiple_classification () :
             print("Cost after iteration {}: {}".format(i, g.getData('J')))
     print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
 
+    print(g.tableTimespend())
+
     # 测试
     gtest = erud.nous(
         '''

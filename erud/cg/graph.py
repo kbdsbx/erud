@@ -393,3 +393,12 @@ class ComputationGraph:
 
             str += "\n"
         return str
+    
+    def tableTimespend(self) :
+        str = "\n"
+        str += "| code \t | fprop last \t | fprop total \t | bprop last \t | bprop total \t|\n"
+        for node in self.__nodes :
+            str += "| %s \t | %.3f \t | %.3f \t | %.3f \t | %.3f \t |" %(node.code, node.ftimespend, node.ftimetotal, node.btimespend, node.btimetotal)
+            str += "\n"
+        
+        return str

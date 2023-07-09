@@ -18,6 +18,9 @@ from erud.opts.cost import cost
 from erud.opts.dropout import dropout
 from erud.opts.batchnorm import batchnorm
 from erud.opts.softmax_cross_entropy import softmax_cross_entropy
+from erud.opts.conv2d import conv2d
+from erud.opts.pooling_max_2d import pooling_max_2d
+
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
@@ -45,6 +48,9 @@ class nous :
         'tanh' : tanh,
         'dropout' : dropout,
         'batchnorm' : batchnorm,
+        'conv2d' : conv2d,
+        'pooling_max_2d' : pooling_max_2d,
+
         'cross_entropy' : cross_entropy,
         'softmax_cross_entropy' : softmax_cross_entropy,
         'cost' : cost,
