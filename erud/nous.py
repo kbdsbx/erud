@@ -18,13 +18,14 @@ from erud.opts.cost import cost
 from erud.opts.dropout import dropout
 from erud.opts.batchnorm import batchnorm
 from erud.opts.softmax_cross_entropy import softmax_cross_entropy
-from erud.opts.conv2d import conv2d
-from erud.opts.pooling_max_2d import pooling_max_2d
+# from erud.opts.conv2d import conv2d
+from erud.opts.conv2d_v2 import conv2d_v2
+from erud.opts.max_pool import max_pool
+from erud.opts.flatten import flatten
 
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
-import re
 
 from erud.opts_extend.accuracy import accuracy
 from erud.opts_extend.threshold import threshold
@@ -48,8 +49,9 @@ class nous :
         'tanh' : tanh,
         'dropout' : dropout,
         'batchnorm' : batchnorm,
-        'conv2d' : conv2d,
-        'pooling_max_2d' : pooling_max_2d,
+        'conv2d' : conv2d_v2,
+        'max_pool' : max_pool,
+        'flatten' : flatten,
 
         'cross_entropy' : cross_entropy,
         'softmax_cross_entropy' : softmax_cross_entropy,

@@ -1,7 +1,7 @@
 from erud.cg.payload import payload
 import numpy as np
 
-class pooling_max_2d(payload) :
+class max_pool(payload) :
 
     __stride : int
     __p : int
@@ -23,8 +23,8 @@ class pooling_max_2d(payload) :
         (s, m1, n1, c1) = x.shape
 
 
-        m2 = np.floor((m1 - _p) / _stride + 1)
-        n2 = np.floor((n1 - _q) / _stride + 1)
+        m2 = int(np.floor((m1 - _p) / _stride + 1))
+        n2 = int(np.floor((n1 - _q) / _stride + 1))
 
         z = np.zeros((s, m2, n2, c1))
 

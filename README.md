@@ -34,7 +34,7 @@
         * 矩阵乘matmul（完成）
         * ...
     * 复合二元操作
-        * 卷积
+        * 卷积（完成）
         * 交叉熵cross_entropy（完成）
         * L1（完成）
         * L2（完成）
@@ -51,12 +51,13 @@
         * softmax（完成）：softmax需要另一个操作数轴，所以虽然是一元操作，但在nous中的调用方法为``-> softmax 1 ->``或``-> softmax [0,1] ->``
         * <del>dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间`-> dropout 0.5 ->`</del>
         * batchnorm（完成）
-        * 修改变量的维度
+        * 最大池化max_pool（完成）
+        * 修改变量的维度flatten（完成）
         * ...
     * 复合三元操作
         * 也许有...
     * 带控制参数的一元或多元操作
-        * 新softmax（待改造）：softmax需要一个元组来区分样本集合`X`中，每个样本延哪个轴存放，并根据存放的轴号进行概率计算，调用方法为`-> softmax((1)) ->` 或`-> softmax((0, 1)) ->`
+        * softmax（完成）：softmax需要一个元组来区分样本集合`X`中，每个样本延哪个轴存放，并根据存放的轴号进行概率计算，调用方法为`-> softmax((1)) ->` 或`-> softmax((0, 1)) ->`
         * dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间，调用方法改为`-> dropout(0.5) ->`
         * softmax_cross_entropy（完成） : `softmax`及其交叉熵的复合运算符，调用方法为`-> softmax_cross_entropy(1) Y ->`
     
@@ -237,6 +238,7 @@ t -> y:$$
     * ``5 add 10``: 包含左右操作数的计算声明，操作数为任意类型变量，但用户需要自己检查变量是否满足操作运算的规则（例如矩阵乘法）
     * ``add W1``: 只包含一个操作数的计算声明，如果操作符需要两个操作数，则左操作数为上一层的结果
     * ``relu``: 没有操作数的计算声明，如果操作符需要一个操作数，则左操作数为上一层的结果
+    * ``dropout(0.5)``: 带参数的操作符
 
 3. 层操作
 
@@ -722,6 +724,57 @@ gtest = erud.nous(
     '''
 ).parse()
 
+
+```
+
+
+### 卷积神经网络
+
+`conv2d`执行卷积操作，`max_pool`执行最大池化，`flatten`拉平网络，并链接卷积层与全连接层
+
+代码见`./test/test_conv.py`
+
+```python
+num_iterations = 200
+rate = 0.04
+
+g = erud.nous(
+    '''
+    X:(1080, 64, 64, 3) ->
+
+        ##### 一层卷积
+        ##### (1080, 64, 64, 3) -> (1080, 64, 64, 8) -> (1080, 8, 8, 8)
+
+        conv2d(1, 2) W1:xavier((4, 4, 3, 8), 16) -> relu -> max_pool(8, 8, 8) ->
+
+        ##### 二层卷积
+        ##### (1080, 8, 8, 8) -> (1080, 8, 8, 16) -> (1080, 2, 2, 16)
+
+        conv2d(1, 1) W2:xavier((2, 2, 8, 16), 4) -> relu -> max_pool(4, 4, 4) ->
+
+        ##### 全连接
+        flatten -> matmul W3:xavier((64, 6), 64) add b3:(6) ->
+
+    softmax_cross_entropy(1) Y:(1080, 6) -> cost -> J:$$
+    '''
+).parse()
+
+g.setUpdateFunc('W1', erud.upf.norm(rate))
+g.setUpdateFunc('W2', erud.upf.norm(rate))
+g.setUpdateFunc('W3', erud.upf.norm(rate))
+g.setUpdateFunc('b3', erud.upf.norm(rate))
+
+for i in range (num_iterations) :
+    for b in batches :
+        g.setData('X', b[0])
+        g.setData('Y', b[1])
+
+        g.fprop()
+        g.bprop()
+
+    if i % 1 == 0 :
+        print("Cost after iteration {}: {}".format(i, g.getData('J')))
+print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
 
 ```
 

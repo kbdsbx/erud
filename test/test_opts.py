@@ -9,7 +9,8 @@ from erud.opts.softmax import softmax
 import numpy as np
 import pytest as test
 
-np.set_printoptions(precision=99)
+np.set_printoptions(precision=99, suppress=True)
+
 
 # 加法
 def test_operator_add () :
@@ -387,6 +388,62 @@ from erud.opts_extend.max_index import max_index
 def test_max_index() :
     m = np.array([[1,2], [3,4]])
     assert np.all(max_index(1).fprop(m) == np.array([1, 1]))
+
+from erud.opts.conv2d import conv2d
+
+def test_conv2d() :
+    np.random.seed(1)
+    X = np.random.randn(10, 4, 4, 3)
+    W = np.random.randn(2, 2, 3, 8)
+    conv = conv2d(1, 2)
+    Z = conv.fprop(X, W)
+    assert np.mean(Z) == -0.011100360859202631
+
+    np.random.seed(1)
+    [dx, dw] = conv.bprop(Z)
+    assert np.mean(dx) == 3.6150899802828027
+    assert np.mean(dw) == 9.078398646602041
+
+from erud.opts.max_pool import max_pool
+
+def test_pooling_max_2d() :
+    np.random.seed(1)
+
+    X = np.random.randn(2, 4, 4, 3)
+    opt = max_pool(1, 4, 4)
+    Z = opt.fprop(X)
+    assert np.all(Z == np.array([[[[1.74481176421648, 1.6924546010277466, 2.100255136478842]]], [[[1.198917879901507, 1.5198168164221988, 2.1855754065331614]]]]))
+
+    np.random.seed(1)
+    X = np.random.randn(5, 5, 3, 2)
+    opt = max_pool(1, 2, 2)
+    Z = opt.fprop(X)
+    dZ = np.random.randn(5, 4, 2, 2)
+    [dX] = opt.bprop(dZ)
+    assert np.mean(dZ) == 0.14571390272918056
+    assert np.mean(dX) == 0.07771408145556294
+    assert np.all(dX[1,1] == np.array([[ 0., 0.,],[ 5.058443935342465,-1.6828270215556507],[ 0.,0.,]]))
+
+
+
+from erud.opts.conv2d_v2 import conv2d_v2
+
+def test_conv2d_v2() :
+    np.random.seed(1)
+    X = np.random.randn(10, 4, 4, 3)
+    W = np.random.randn(2, 2, 3, 8)
+    conv = conv2d_v2(1, 2)
+    Z = conv.fprop(X, W)
+    assert np.mean(Z) == -0.011100360859202626
+
+    np.random.seed(1)
+    [dx, dw] = conv.bprop(Z)
+    assert np.mean(dx) == 3.615089980282802
+    assert np.mean(dw) == 9.078398646602034
+
+
+
+
 
 
 

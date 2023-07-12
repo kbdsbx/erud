@@ -51,12 +51,12 @@ class ComputationNode :
 
     # 计算前向传播
     def fprop(self, *args) :
-        tic = time.process_time()
+        tic = time.time()
 
         res = self.__data.fprop(*args)
 
-        toc = time.process_time()
-        spt = (toc - tic) * 1000
+        toc = time.time()
+        spt = (toc - tic)
         self.__ftimespend = spt
         self.__ftimetotal += spt
 
@@ -64,12 +64,12 @@ class ComputationNode :
     
     # 计算反向传播
     def bprop(self, args) :
-        tic = time.process_time()
+        tic = time.time()
 
         res = self.__data.bprop(args)
 
-        toc = time.process_time()
-        spt = (toc - tic) * 1000
+        toc = time.time()
+        spt = (toc - tic)
         self.__btimespend = spt
         self.__btimetotal += spt
 

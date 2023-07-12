@@ -53,8 +53,8 @@ class conv2d(payload) :
         _padding = self.__padding
         _stride = self.__stride
 
-        m2 = np.floor((m1 + (2 * _padding) - p) / _stride + 1)
-        n2 = np.floor((n1 + (2 * _padding) - q) / _stride + 1)
+        m2 = int(np.floor((m1 + (2 * _padding) - p) / _stride + 1))
+        n2 = int(np.floor((n1 + (2 * _padding) - q) / _stride + 1))
 
         z = np.zeros((s, m2, n2, c2))
 
