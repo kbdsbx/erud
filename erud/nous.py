@@ -26,6 +26,7 @@ from erud.opts.flatten import flatten
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 import numpy as np
+import re
 
 from erud.opts_extend.accuracy import accuracy
 from erud.opts_extend.threshold import threshold
