@@ -26,4 +26,31 @@ class const (payload) :
             return [np.zeros_like(self.__data)]
         else :
             return [0]
+        
+    
+    # 导出
+    def exports (self) -> object:
+        name = (super(const, self).exports())["name"]
+
+        exp = {
+            'type' : 'const',
+            'name' : name,
+            'payload' : '',
+        }
+
+        if isinstance(self.__data, np.ndarray) :
+            exp['payload'] = self.__data.tolist()
+        else :
+            exp['payload'] = self.__data
+        
+        return exp
+    
+    # 导入
+    def imports (self, value) :
+        super(const, self).imports(value)
+        self.__data = value['payload']
+        
+    
+
+
 

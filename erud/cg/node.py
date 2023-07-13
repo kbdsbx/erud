@@ -11,13 +11,13 @@ class ComputationNode :
 
     #### debuger
     # 前向传播上一次计算花费的时间
-    __ftimespend : int = 0
+    __ftimespend : float = 0
     # 前向传播计算花费的总时间
-    __ftimetotal : int = 0
+    __ftimetotal : float = 0
     # 反向传播上一次计算花费的时间
-    __btimespend : int = 0
+    __btimespend : float = 0
     # 反向传播计算花费的总时间
-    __btimetotal : int = 0
+    __btimetotal : float = 0
 
     @property
     def data (self) :
@@ -84,3 +84,22 @@ class ComputationNode :
             return ""
         else :
             return self.__data
+    
+    def exports(self) -> object :
+        obj = {
+            'code' : self.__code,
+            'ftimespend' : self.__ftimespend,
+            'btimespend' : self.__btimespend,
+            'ftimetotal' : self.__ftimetotal,
+            'btimetotal' : self.__btimetotal,
+            **self.__data.exports()
+        }
+        return obj
+    
+    def imports(self, value) :
+        self.__data.imports(value)
+        self.__code = value['code']
+        self.__ftimespend = value['ftimespend']
+        self.__btimespend = value['btimespend']
+        self.__ftimetotal = value['ftimetotal']
+        self.__btimetotal = value['btimetotal']

@@ -32,6 +32,20 @@ class payload :
     # 变量类型可以使标量、矢量、矩阵、张量等
     def bprop () -> list[any] : ...
 
+    # 导出方法
+    # 任何需要导出值的子类需要实现的方法，用户计算图将运行中的临时值以JSON的方式保存在文件中
+    # 不需要导出数值的子类不需要实现此方法
+    def exports(self) -> any : 
+        return {
+            'name' : self.__name
+        }
+    
+    # 导入方法
+    # 任何需要导入值的子类需要实现的方法，从用户文件缓存中读入值来还原计算图
+    # 不需要导入数值的子类不需要实现此方法
+    def imports(self, value) :
+        self.__name = value["name"]
+
     def __str__ (self) -> str:
         return self.name
 

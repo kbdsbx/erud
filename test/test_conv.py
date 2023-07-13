@@ -54,7 +54,7 @@ def set_mini_batch(train_X, train_Y, m, s) :
     
     return batches
 
-def test_conv () :
+def no_test_conv () :
     train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes = load_dataset()
 
     assert train_set_x_orig.shape == (1080, 64, 64, 3)

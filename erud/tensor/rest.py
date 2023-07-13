@@ -25,3 +25,29 @@ class rest (payload) :
             return [np.ones_like(self.__data)]
         else :
             return [1]
+    
+
+    # 导出
+    def exports (self) -> object:
+        name = (super(rest, self).exports())["name"]
+
+        exp = {
+            'type' : 'rest',
+            'name' : name,
+            'payload' : '',
+        }
+
+        if isinstance(self.__data, np.ndarray) :
+            exp['payload'] = self.__data.tolist()
+        else :
+            exp['payload'] = self.__data
+        
+        return exp
+    
+    # 导入
+    def imports (self, value) :
+        super(rest, self).imports(value)
+        self.__data = value['payload']
+        
+    
+

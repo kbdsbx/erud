@@ -57,4 +57,27 @@ class var (payload) :
         else :
             return ""
     
+    # 导出
+    def exports (self) -> object:
+        name = (super(var, self).exports())["name"]
+
+        exp = {
+            'type' : 'var',
+            'name' : name,
+            'payload' : '',
+        }
+
+        if isinstance(self.__data, np.ndarray) :
+            exp['payload'] = self.__data.tolist()
+        else :
+            exp['payload'] = self.__data
+        
+        return exp
+    
+    # 导入
+    def imports (self, value) :
+        super(var, self).imports(value)
+        self.__data = value['payload']
+        
+    
 
