@@ -1,6 +1,10 @@
 import scipy.io
 from erud.nous import nous
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
    
 np.set_printoptions(precision=99, suppress=True)
 

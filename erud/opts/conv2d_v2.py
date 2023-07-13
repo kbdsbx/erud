@@ -1,5 +1,9 @@
 from erud.cg.payload import payload
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 import cupy as cp
 
 class conv2d_v2(payload) :

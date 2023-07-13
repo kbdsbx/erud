@@ -1,6 +1,10 @@
 import math
 from erud.nous import nous
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 def load_dataset() :
     train_X = [[-0.21687013460912397   ,  0.8050501531955674    ,

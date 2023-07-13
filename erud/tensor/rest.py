@@ -1,5 +1,9 @@
 from erud.cg.payload import payload
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 # 结果量，存放计算图的结果
 class rest (payload) :

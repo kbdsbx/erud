@@ -1,5 +1,9 @@
 from erud.cg.payload import payload
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 class relu(payload) :
     __x : any
@@ -13,5 +17,5 @@ class relu(payload) :
         _x = self.__x
 
         # 使用右导数，当xi为0时，dz/dxi = 1
-        dx = dz * np.int64(_x >= 0)
+        dx = dz * (_x >= 0)
         return [dx]

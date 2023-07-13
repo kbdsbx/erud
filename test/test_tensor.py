@@ -1,6 +1,10 @@
 from erud.tensor.var import var
 from erud.tensor.const import const
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 # 测试变量
 def test_variable () :

@@ -1,5 +1,9 @@
 from erud.nous import nous
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 import h5py
 
 def load_dataset():

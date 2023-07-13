@@ -1,7 +1,12 @@
 import h5py
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 import erud
 import math
+import time
 
 def load_dataset():
     path = __file__[:__file__.rfind('\\')]
@@ -100,6 +105,8 @@ def test_conv () :
     g.setUpdateFunc('W3', erud.upf.norm(rate))
     g.setUpdateFunc('b3', erud.upf.norm(rate))
 
+    tic = time.time()
+
     for i in range (num_iterations) :
         for b in batches :
             g.setData('X', b[0])
@@ -108,11 +115,15 @@ def test_conv () :
             g.fprop()
             g.bprop()
 
-        if i % 1 == 0 :
-            print("Cost after iteration {}: {}".format(i, g.getData('J')))
-    print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
+        # if i % 1 == 0 :
+            print("Cost after iteration {}: {}.".format(i, g.getData('J')))
+    print("Cost after iteration {}: {}.".format(num_iterations, g.getData('J')))
+
+    toc = time.time()
+
 
     print(g.tableTimespend())
+    print("Cost of time is %fs." % ((toc - tic)))
 
 
     gtest = erud.nous(

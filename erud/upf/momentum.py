@@ -1,4 +1,8 @@
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 class momentum :
     __velocity : any = None

@@ -1,7 +1,11 @@
 from erud.cg.graph import ComputationGraph as graph
 from erud.cg.node import ComputationNode as node
 from erud.errors import *
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 import random
 from erud.nous import nous
 

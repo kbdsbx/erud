@@ -1,4 +1,8 @@
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 # 获得广播的轴，如果在计算在z = x [opt] y时发生了广播，则broadcast_axis(z, x)返回计算时相对z，x广播的轴
 # z: 计算结果

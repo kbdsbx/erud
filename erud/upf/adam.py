@@ -1,4 +1,8 @@
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 from erud._utils import epsilon as eps
 
 class adam : 

@@ -1,5 +1,9 @@
 from erud.cg.payload import payload
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 # 总代价函数
 class cost (payload) :
@@ -8,7 +12,7 @@ class cost (payload) :
     def fprop(self, x) -> float :
         r = x
         if isinstance(x, np.ndarray) :
-            r = 1. / np.size(x) * np.nansum(x)
+            r = 1. / np.size(x) * np.sum(x)
         
         self.__x = x
 

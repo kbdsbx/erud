@@ -1,7 +1,11 @@
 from erud.nous import nous
 from erud.errors import ParseError
 import pytest as test
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 
 # 获取代码串中的第一个元素和剩余的子串

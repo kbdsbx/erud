@@ -6,7 +6,11 @@ from erud.opts.matmul import matmul
 from erud.opts.relu import relu
 from erud.opts.sigmoid import sigmoid
 from erud.opts.softmax import softmax
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 import pytest as test
 
 np.set_printoptions(precision=99, suppress=True)

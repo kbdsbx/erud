@@ -1,5 +1,9 @@
 from erud.cg.payload import payload
-import numpy as np
+from erud._utils import useGPU
+if useGPU :
+    import cupy as np
+else :
+    import numpy as np
 
 class tanh(payload) :
     # 缓存计算结果用于反向传播
