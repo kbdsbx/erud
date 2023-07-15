@@ -37,7 +37,7 @@ class payload :
     # 不需要导出数值的子类不需要实现此方法
     def exports(self) -> any : 
         return {
-            'name' : self.__name
+            'name' : self.__name or str(self.__class__.__name__)
         }
     
     # 导入方法

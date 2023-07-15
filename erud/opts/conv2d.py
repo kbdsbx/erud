@@ -24,32 +24,35 @@ class conv2d(payload) :
         self.__stride = stride
         self.__padding = padding
 
-    # 输入样本需固定为shape=(s, m1, n1, c1)
-    # s 为样本数
-    # m1 为样本宽度
-    # n1 为样本高度
-    # c1 为样本通道数
-    #
-    # 卷积核参数需固定为shape=(p, q, c1, c2)
-    # p 为卷积核宽度
-    # q 为卷积核高度，通常与宽度相等
-    # c1 为输入（样本）通道数
-    # c2 为输出通道数
-    #
-    # 卷积计算返回值固定为shape=(s, m2, n2, c2)
-    # s 为样本数，不变
-    # m2 为输出宽度，m2 = floor((m1 + 2 * padding - p) / stride + 1)
-    #       m1 为输入宽度
-    #       padding 为增加的边距，通常根据valid、same、full取不同的值
-    #       p 为卷积核宽度
-    #       stride 为步长
-    # n2 为输出高度，n2 = floor((n1 + 2 * padding - q) / stride + 1)
-    #       n1 为输入高度
-    #       padding 为增加的边距，通常根据valid、same、full取不同的值
-    #       q 为卷积核高度
-    #       stride 为步长
-    # c2 为输出通道数，或理解为三维卷积核的个数
+
     def fprop(self, x : np.ndarray, w : np.ndarray) -> np.ndarray :
+        """  
+        输入样本需固定为shape=(s, m1, n1, c1)
+        s 为样本数
+        m1 为样本宽度
+        n1 为样本高度
+        c1 为样本通道数
+        
+        卷积核参数需固定为shape=(p, q, c1, c2)
+        p 为卷积核宽度
+        q 为卷积核高度，通常与宽度相等
+        c1 为输入（样本）通道数
+        c2 为输出通道数
+        
+        卷积计算返回值固定为shape=(s, m2, n2, c2)
+        s 为样本数，不变
+        m2 为输出宽度，m2 = floor((m1 + 2 * padding - p) / stride + 1)
+            m1 为输入宽度
+            padding 为增加的边距，通常根据valid、same、full取不同的值
+            p 为卷积核宽度
+            stride 为步长
+        n2 为输出高度，n2 = floor((n1 + 2 * padding - q) / stride + 1)
+            n1 为输入高度
+            padding 为增加的边距，通常根据valid、same、full取不同的值
+            q 为卷积核高度
+            stride 为步长
+        c2 为输出通道数，或理解为三维卷积核的个数
+        """
         self.__w = w
 
         (s, m1, n1, c1) = x.shape

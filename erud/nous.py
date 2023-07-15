@@ -243,7 +243,11 @@ class nous :
     __code : str = ''
 
     # 计算图
-    __g : graph
+    __g : graph = None
+
+    @property
+    def code(self) :
+        return self.__code
 
     @property
     def g (self) :

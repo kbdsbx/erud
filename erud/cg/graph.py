@@ -552,26 +552,35 @@ class ComputationGraph:
         return str
     
 
-    # 将计算图数据保存在文件里
-    def exports(self, path) :
+    # 将计算图数据保存在文件里或其他位置
+    def exports(self, path = None) :
         export_nodes = []
         for n in self.__nodes :
             obj = n.exports()
             export_nodes.append(obj)
-        
-        export_str = json.dumps(export_nodes)
 
-        with open(path, "w", encoding="utf-8") as f :
-            f.write(export_str)
+        if path :
+            export_str = json.dumps(export_nodes)
+
+            with open(path, "w", encoding="utf-8") as f :
+                f.write(export_str)
+
+        return export_nodes
         
     
-    # 从文件中读取计算图
-    def imports(self, path) :
-        imports_str = ''
-        with open(path, "r", encoding="utf-8") as f :
-            imports_str = f.read()
+    # 从文件或对象中读取计算图
+    # 任选其一
+    def imports(self, path = None, value = None) :
+
+        if path :
+            imports_str = ''
+            with open(path, "r", encoding="utf-8") as f :
+                imports_str = f.read()
+            nodes = json.loads(imports_str)
         
-        nodes = json.loads(imports_str)
+        if value :
+            nodes = value
+
         for i in range(len(nodes)) :
             self.__nodes[i].imports(nodes[i])
         
