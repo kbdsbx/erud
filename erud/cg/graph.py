@@ -389,6 +389,12 @@ class ComputationGraph:
     # 前向传播
     # 此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
     def fprop (self) :
+        """
+        通过拓扑排序遍历方式执行整个计算图的前向传播
+
+        此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
+        """
+
         # 还未计算的节点
         apply_node = self.__nodes
 
@@ -452,6 +458,11 @@ class ComputationGraph:
     # 反向传播
     # 此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
     def bprop (self) : 
+        """
+        通过拓扑排序遍历方式执行整个计算图的反向传播
+
+        此算法目前只适用于有向无环图，对于可能带环状结构的循环网络不兼容
+        """
         apply_node = self.__nodes
 
         # 从还未计算的节点中筛选出入度为0的节点
@@ -499,6 +510,13 @@ class ComputationGraph:
     # 设置值
     # 根据node.data.name查找并设置节点的值
     def setData (self, name : str, value : any) :
+        """
+        根据节点名称找到相应参数节点并赋值
+
+        ### 参数
+        * name : str, 节点名称
+        * value : any, 值
+        """
         for n in self.__nodes :
             if n.data.name == name :
                 n.data.data = value
@@ -508,6 +526,12 @@ class ComputationGraph:
     
     # 获取值
     def getData (self, name: str ) -> any :
+        """
+        根据节点名称获取值
+
+        ### 参数
+        * name : str, 节点名称
+        """
         for n in self.__nodes :
             if n.data.name == name :
                 return n.data.data
@@ -516,6 +540,13 @@ class ComputationGraph:
 
     # 设置更新函数
     def setUpdateFunc(self, name : str, func : any) :
+        """
+        设置节点的更新函数
+
+        ### 参数
+        * name : str, 参数名
+        * func, 更新方法
+        """
         for n in self.__nodes :
             if n.data.name == name :
                 n.data.update_func = func
@@ -543,6 +574,9 @@ class ComputationGraph:
     
     # 表格的方式输出时间开销
     def tableTimespend(self) :
+        """
+        表格的方式输出时间开销
+        """
         str = "\n"
         str += "| code \t | fprop last(s) \t | fprop total(s) \t | bprop last(s) \t | bprop total(s) \t|\n"
         for node in self.__nodes :

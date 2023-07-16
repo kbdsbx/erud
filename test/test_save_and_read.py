@@ -5,6 +5,7 @@ if useGPU :
     import cupy as np
 else :
     import numpy as np
+import pytest as test
 
 def test_exports() :
     np.random.seed(1)
@@ -28,6 +29,9 @@ def test_exports() :
 
     path = __file__[:__file__.rfind('\\')]
     filename = path + '/datasets/test_export_caches.json'
+
+    g.setUpdateFunc('W1', erud.upf.norm(0.5))
+    g.setUpdateFunc('W2', erud.upf.norm(0.5))
 
     g.exports(filename)
 
@@ -57,8 +61,8 @@ def test_imports() :
 
     g.imports(filename)
 
-    assert g.getData('W1')[0][0][0][0] == 0.4060863409158104
-    assert g.getData('W2')[0][0][0][0] == 0.30899276696016736
+    assert g.getData('W1')[0, 0, 0, 0] == 0.4060863409158104
+    assert g.getData('W2')[0, 0, 0, 0] == 0.30899276696016736
 
     # os.remove(filename)
 
@@ -84,10 +88,16 @@ def test_exports_from_nous() :
     )
     n.parse()
 
+    n.g.setUpdateFunc('W1', erud.upf.norm(0.5))
+    n.g.setUpdateFunc('W2', erud.upf.norm(0.5))
+
     path = __file__[:__file__.rfind('\\')]
     filename = path + '/datasets/test_export_nous_caches.json'
 
-    erud.nous_exports(n, filename)
+    erud.nous_exports(n, filename, {
+        'a' : 0,
+        'b' : 1,
+    })
 
     assert os.path.exists(filename) == True
 
@@ -96,12 +106,24 @@ def test_imports_from_nous() :
     path = __file__[:__file__.rfind('\\')]
     filename = path + '/datasets/test_export_nous_caches.json'
 
-    erud.nous_imports(n, filename)
+    n, obj = erud.nous_imports(filename)
 
-    assert n.g.getData('W1')[0][0][0][0] == 0.4060863409158104
-    assert n.g.getData('W2')[0][0][0][0] == 0.30899276696016736
+    n.g.setUpdateFunc('W1', erud.upf.norm(0.5))
+    n.g.setUpdateFunc('W2', erud.upf.norm(0.5))
+
+    assert obj['a'] == 0
+    assert obj['b'] == 1
+    assert n.g.getData('W1')[0, 0, 0, 0] == 0.4060863409158104
+    assert n.g.getData('W2')[0, 0, 0, 0] == 0.30899276696016736
 
     # os.remove(filename)
+
+def test_imports_from_error_file() :
+    path = __file__[:__file__.rfind('\\')]
+    filename = path + '/datasets/test_export_nous_caches_none_file.json'
+
+    with test.raises(FileNotFoundError) :
+        erud.nous_imports(filename)
 
 
 

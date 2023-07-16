@@ -19,6 +19,7 @@ class var (payload) :
         self.__data = d
     
     # 更新函数
+    # 是否拥有更新函数通常被用来判断节点是否是常量
     @property
     def update_func(self) -> any:
         return self.__update_func
@@ -67,17 +68,25 @@ class var (payload) :
             'payload' : '',
         }
 
-        if isinstance(self.__data, np.ndarray) :
-            exp['payload'] = self.__data.tolist()
-        else :
-            exp['payload'] = self.__data
+        # 只导出具有更新方法的学习参数，没有更新方法的固定参数和样本不导出
+        if self.__update_func is not None :
+            if isinstance(self.__data, np.ndarray) :
+                exp['payload'] = self.__data.tolist()
+            else :
+                exp['payload'] = self.__data
         
         return exp
     
     # 导入
     def imports (self, value) :
         super(var, self).imports(value)
-        self.__data = value['payload']
+
+        v = value['payload']
+        if v :
+            if isinstance(v, list) :
+                self.__data = np.array(v)
+            else :
+                self.__data = v
         
     
 

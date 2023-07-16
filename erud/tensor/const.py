@@ -48,7 +48,11 @@ class const (payload) :
     # 导入
     def imports (self, value) :
         super(const, self).imports(value)
-        self.__data = value['payload']
+        v = value['payload']
+        if isinstance(v, list) :
+            self.__data = np.array(v)
+        else :
+            self.__data = v
         
     
 

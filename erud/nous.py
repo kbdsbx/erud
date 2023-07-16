@@ -839,6 +839,15 @@ class nous :
 
     # 解析代码
     def parse(self, code : str = None) :
+        """
+        解析代码
+
+        ### 参数
+        * code : str, 代码，可为空
+
+        ### 返回值
+        * g : ComputationGraph, 计算图对象
+        """
         if code is not None :
             self.__code = code
         self.__g = graph()
