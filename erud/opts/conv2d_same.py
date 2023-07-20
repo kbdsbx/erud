@@ -17,8 +17,8 @@ class conv2d_same (conv2d_v2) :
         """
         (s, m1, n1, c1) = x.shape
         (p, q, c1, c2) = w.shape
-        _stride = self.__stride
-        self.__padding = int(np.ceil(((m1 - 1) * _stride - m1 + p) / 2))
+        _stride = self.stride
+        self.padding = int(np.ceil(((m1 - 1) * _stride - m1 + p) / 2))
 
         return super(conv2d_same, self).fprop(x, w)
     

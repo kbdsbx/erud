@@ -20,6 +20,7 @@ from erud.opts.batchnorm import batchnorm
 from erud.opts.softmax_cross_entropy import softmax_cross_entropy
 # from erud.opts.conv2d import conv2d
 from erud.opts.conv2d_v2 import conv2d_v2
+from erud.opts.conv2d_same import conv2d_same
 from erud.opts.max_pool import max_pool
 from erud.opts.flatten import flatten
 
@@ -196,6 +197,7 @@ class nous :
         'dropout' : dropout,
         'batchnorm' : batchnorm,
         'conv2d' : conv2d_v2,
+        'conv2d_same' : conv2d_same,
         'max_pool' : max_pool,
         'flatten' : flatten,
 

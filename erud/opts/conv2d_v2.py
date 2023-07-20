@@ -9,9 +9,9 @@ import cupy as cp
 class conv2d_v2(payload) :
 
     # 步长
-    __stride : int
+    __stride : int = None
     # 扩展边距，通常用来填充零
-    __padding: int
+    __padding: int = None
 
     # padding后的输入
     __px : np.ndarray = None
@@ -21,6 +21,24 @@ class conv2d_v2(payload) :
     __tw : np.ndarray = None
     # 结果
     __w : np.ndarray = None
+
+    @property
+    def stride (self) -> any:
+        return self.__stride
+    
+    @stride.setter
+    def stride(self, s) -> any :
+        self.__stride = s
+        return s
+    
+    @property
+    def padding(self) -> any:
+        return self.__padding
+    
+    @padding.setter
+    def padding(self, p) -> any:
+        self.__padding = p
+        return p
 
 
     def __init__(self, stride = 1, padding = 0) :

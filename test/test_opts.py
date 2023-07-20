@@ -446,6 +446,18 @@ def test_conv2d_v2() :
     assert np.mean(dw) == 9.078398646602034
 
 
+def test_conv2d_v2_for_cpp() :
+    X = np.array([(i+1) for i in range(144)])
+    W = np.array([-(i+1) for i in range(24)])
+    print(X)
+    print(W)
+
+    X = X.reshape((2, 4, 6, 3))
+    W = W.reshape((2, 2, 3, 2))
+
+    conv = conv2d_v2(1, 0)
+    Z = conv.fprop(X, W)
+    print(Z)
 
 
 
