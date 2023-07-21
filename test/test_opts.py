@@ -447,17 +447,25 @@ def test_conv2d_v2() :
 
 
 def test_conv2d_v2_for_cpp() :
-    X = np.array([(i+1) for i in range(144)])
-    W = np.array([-(i+1) for i in range(24)])
-    print(X)
-    print(W)
+    X = np.array([(i+1) for i in range(144)], dtype = np.float32)
+    W = np.array([-(i+1) for i in range(24)], dtype = np.float32)
+    # print(X)
+    # print(W)
 
     X = X.reshape((2, 4, 6, 3))
     W = W.reshape((2, 2, 3, 2))
 
     conv = conv2d_v2(1, 0)
     Z = conv.fprop(X, W)
-    print(Z)
+    # print(Z)
+
+    dZ = np.array([((i+1) * 0.01) for i in range(60)])
+
+    dZ = dZ.reshape((2, 3, 5, 2))
+
+    [dX, dW] = conv.bprop(dZ)
+    # print('dX :' + str(dX))
+    # print('dW :' + str(dW))
 
 
 

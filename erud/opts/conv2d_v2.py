@@ -136,7 +136,11 @@ class conv2d_v2(payload) :
             for m2i in range(m2) :
                 for n2i in range(n2) :
                     dpx[si, (m2i * _stride):(m2i * _stride + p), (n2i * _stride):(n2i * _stride + q), :] += (dtx[si, m2i, n2i, :]).reshape((p, q, c1))
-        dx = dpx[:, _padding : -_padding, _padding : -_padding, :]
+
+        if _padding :
+            dx = dpx[:, _padding : -_padding, _padding : -_padding, :]
+        else :
+            dx = dpx
 
 
         _tx_temp = _tx.transpose((0, 1, 3, 2))

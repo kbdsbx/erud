@@ -25,6 +25,7 @@ int index(int pi, int qi, int ci, int p, int q, int c) {
  * (s, m1, n1, c1) 输入维度
  * (s, m2, n2, c2) 输出维度
  * (p, q, c1, c2) 卷积维度
+ * stride 卷积步长
 */
 int conv2d_fprop(
     float* x,
@@ -37,9 +38,9 @@ int conv2d_fprop(
     int c1,
     int m2,
     int n2,
+    int c2,
     int p,
     int q,
-    int c2,
     int stride
 ) {
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _x(p * q * c1, s * m2 * n2);
@@ -83,12 +84,63 @@ int conv2d_fprop(
  * 卷积反向传播
  * 
  * cx 经过处理的输入的缓存
- * cw 经过处理的输出的缓存
+ * w 卷积核
  * dz 导数矩阵的flatten版本
  * dx 输出x梯度
  * dw 输出w梯度
+ * (s, m1, n1, c1) 输入维度
+ * (s, m2, n2, c2) 输出维度
+ * (p, q, c1, c2) 卷积维度
+ * stride 卷积步长
 */
-int conv2d_bprop(float* cx, float* cw, float* dz, float* dx, float* dw) {
+int conv2d_bprop(
+    float* cx,
+    float* w,
+    float* dz,
+    float* dx,
+    float* dw,
+    int s,
+    int m1,
+    int n1,
+    int c1,
+    int m2,
+    int n2,
+    int c2,
+    int p,
+    int q,
+    int stride
+) {
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _w = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> >(w, c2, p * q * c1);
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _cx = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> >(cx, p * q * c1, s * m2 * n2);
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _dz = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> >(dz, c2, s * m2 * n2);
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _wt(_w.transpose());
+    // (p * q * c1, s * m2 * n2)
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _dtx(_wt * _dz);
+    int _mi = 0, _ni = 0;
+    for (int si = 0; si < s; si++) {
+        for (int m2i = 0; m2i < m2; m2i++) {
+            for (int n2i = 0; n2i < n2; n2i++) {
+                for (int pi = 0; pi < p; pi++) {
+                    for (int qi = 0; qi < q; qi++) {
+                        for (int c1i = 0; c1i < c1; c1i++) {
+                            _mi = stride * m2i + pi;
+                            _ni = stride * n2i + qi;
+                            dx[index(si, _mi, _ni, c1i, s, m1, n1, c1)] += _dtx(index(pi, qi, c1i, p, q, c1), index(si, m2i, n2i, s, m2, n2));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _dw(_dz * _cx.transpose());
+
+    // dw复制到输出
+    float* _d;
+    _d = _dw.data();
+    for (int i = 0; i < _dw.size(); i++) {
+        dw[i] = _d[i];
+    }
 
     return 1;
 }
@@ -111,9 +163,30 @@ int main() {
        0.55, 0.56, 0.57, 0.58, 0.59, 0.6};
 
     conv2d_fprop(x, w, z, cache_x, 2, 4, 6, 3, 3, 5, 2, 2, 2, 1);
+
+    // 2 * 2 * 3 * 2
+    float dw[24];
+    // 2 * 4 * 6 * 3
+    float dx[144];
+
+    conv2d_bprop(cache_x, w, dz, dx, dw, 2, 4, 6, 3, 3, 5, 2, 2, 2, 1);
+
     std::cout << "Z = ( ";
     for (int i = 0; i < 2*3*5*2; i++) {
         std::cout << z[i] << " ";
     }
     std::cout << ")" << std::endl;
+
+    std::cout << "dX = ( ";
+    for (int i = 0; i < 144; i++) {
+        std::cout << dx[i] << " ";
+    }
+    std::cout << ")" << std::endl;
+
+    std::cout << "dW = ( ";
+    for (int i = 0; i < 24; i++) {
+        std::cout << dw[i] << " ";
+    }
+    std::cout << ")" << std::endl;
+    
 }
