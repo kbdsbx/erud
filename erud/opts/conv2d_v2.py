@@ -4,7 +4,6 @@ if useGPU :
     import cupy as np
 else :
     import numpy as np
-import cupy as cp
 
 class conv2d_v2(payload) :
 

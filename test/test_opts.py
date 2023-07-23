@@ -445,27 +445,37 @@ def test_conv2d_v2() :
     assert np.mean(dx) == 3.615089980282802
     assert np.mean(dw) == 9.078398646602034
 
+from erud.opts.conv2d_v3 import conv2d_v3
 
 def test_conv2d_v2_for_cpp() :
     X = np.array([(i+1) for i in range(144)], dtype = np.float32)
     W = np.array([-(i+1) for i in range(24)], dtype = np.float32)
-    # print(X)
-    # print(W)
+    # print('X : ' + str(X))
+    # print('W : ' + str(W))
 
     X = X.reshape((2, 4, 6, 3))
     W = W.reshape((2, 2, 3, 2))
 
-    conv = conv2d_v2(1, 0)
+    conv = conv2d_v2(1, 2)
     Z = conv.fprop(X, W)
-    # print(Z)
+    # print('Z : ' + str(Z))
 
-    dZ = np.array([((i+1) * 0.01) for i in range(60)])
+    dZ = np.array([((i+1) * 0.01) for i in range(252)])
 
-    dZ = dZ.reshape((2, 3, 5, 2))
+    dZ = dZ.reshape((2, 7, 9, 2))
 
     [dX, dW] = conv.bprop(dZ)
     # print('dX :' + str(dX))
     # print('dW :' + str(dW))
+
+    conv_v3 = conv2d_v3(1, 2)
+    Zn = conv_v3.fprop(X, W)
+    # print('Z :' + str(Zn))
+
+    [dXn, dWn] = conv_v3.bprop(dZ)
+    # print('dX :' + str(dXn))
+    # print('dW :' + str(dWn))
+    
 
 
 
