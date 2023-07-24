@@ -1,10 +1,7 @@
 #include "Eigen/Dense"
-#include <vector>
-#include <tuple>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
-#include <stdio.h>
 #include <pybind11/numpy.h>
 
 namespace py = pybind11;
@@ -14,11 +11,11 @@ namespace py = pybind11;
  * si, mi, ni, ci 对应维度的下标
  * s, m, n, c 对应维度的宽度
 */
-int index(int si, int mi, int ni, int ci, int s, int m, int n, int c) {
+inline int index(int si, int mi, int ni, int ci, int s, int m, int n, int c) {
     return si * m * n * c + mi * n * c + ni * c + ci;
 }
 
-int index(int pi, int qi, int ci, int p, int q, int c) {
+inline int index(int pi, int qi, int ci, int p, int q, int c) {
     return pi * q * c + qi * c + ci;
 }
 
@@ -37,7 +34,6 @@ int index(int pi, int qi, int ci, int p, int q, int c) {
  * (p, q, c1, c2) 卷积维度
  * stride 卷积步长
 */
-// std::tuple<std::vector<float>, std::vector<float> >  
 int conv2d_fprop(
     py::array_t<float>& x,
     py::array_t<float>& w,
@@ -58,8 +54,6 @@ int conv2d_fprop(
     py::buffer_info wb = w.request();
     float* xp = (float*)xb.ptr;
     float* wp = (float*)wb.ptr;
-    // std::vector<float> z;
-    // std::vector<float> cx;
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _x(p * q * c1, s * m2 * n2);
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> _w = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> >(wp, c2, p * q * c1);
     int _mi = 0, _ni = 0;

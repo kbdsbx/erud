@@ -428,6 +428,30 @@ def test_pooling_max_2d() :
     assert np.mean(dX) == 0.07771408145556294
     assert np.all(dX[1,1] == np.array([[ 0., 0.,],[ 5.058443935342465,-1.6828270215556507],[ 0.,0.,]]))
 
+from erud.opts.max_pool_v3 import max_pool_v3
+
+def test_pooling_max_2d_for_cpp() :
+
+    X = np.array([(i+1) for i in range(144)], dtype = np.float32)
+    X = X.reshape((2, 4, 6, 3))
+    opt = max_pool(2, 2, 2)
+    Z = opt.fprop(X)
+    print('Z:' +str(Z))
+
+    dZ = np.array([((i+1) * 0.01) for i in range(36)])
+    dZ = dZ.reshape((2, 2, 3, 3))
+
+    [dW] = opt.bprop(dZ)
+    print('dW:' +str(dW))
+
+    opt2 = max_pool_v3(2, 2, 2)
+    Zn = opt2.fprop(X)
+    print('Zn:' +str(Zn))
+
+    [dWn] = opt2.bprop(dZ)
+    print('dWn:' +str(dWn))
+
+
 
 
 from erud.opts.conv2d_v2 import conv2d_v2

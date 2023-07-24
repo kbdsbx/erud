@@ -24,6 +24,7 @@ from erud.opts.conv2d_v3 import conv2d_v3
 from erud.opts.conv2d_same import conv2d_same
 from erud.opts.conv2d_v3_same import conv2d_v3_same
 from erud.opts.max_pool import max_pool
+from erud.opts.max_pool_v3 import max_pool_v3
 from erud.opts.flatten import flatten
 
 from erud.tensor.var import var
@@ -203,6 +204,7 @@ class nous :
         'conv2d_v3' : conv2d_v3,
         'conv2d_v3_same' : conv2d_v3_same,
         'max_pool' : max_pool,
+        'max_pool_v3' : max_pool_v3,
         'flatten' : flatten,
 
         'cross_entropy' : cross_entropy,
