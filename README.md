@@ -34,7 +34,7 @@
         * 矩阵乘matmul（完成）
         * ...
     * 复合二元操作
-        * 卷积（完成）
+        * 卷积（完成）conv2d/conv2d_v2/conv2d_v3/conv2d_same/conv2d_v3_same
         * 交叉熵cross_entropy（完成）
         * L1（完成）
         * L2（完成）
@@ -51,7 +51,8 @@
         * softmax（完成）：softmax需要另一个操作数轴，所以虽然是一元操作，但在nous中的调用方法为``-> softmax 1 ->``或``-> softmax [0,1] ->``
         * <del>dropout（完成）: dropout需要一个概率值表示单元失效概率，在0~1之间`-> dropout 0.5 ->`</del>
         * batchnorm（完成）
-        * 最大池化max_pool（完成）
+        * batchnorm2d（完成）
+        * 最大池化max_pool（完成）max_pool/max_pool_v3
         * 修改变量的维度flatten（完成）
         * ...
     * 复合三元操作

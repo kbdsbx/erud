@@ -17,6 +17,7 @@ from erud.opts.cross_entropy import cross_entropy
 from erud.opts.cost import cost
 from erud.opts.dropout import dropout
 from erud.opts.batchnorm import batchnorm
+from erud.opts.batchnorm2d import batchnorm2d
 from erud.opts.softmax_cross_entropy import softmax_cross_entropy
 # from erud.opts.conv2d import conv2d
 from erud.opts.conv2d_v2 import conv2d_v2
@@ -199,6 +200,7 @@ class nous :
         'tanh' : tanh,
         'dropout' : dropout,
         'batchnorm' : batchnorm,
+        'batchnorm2d' : batchnorm2d,
         'conv2d' : conv2d_v2,
         'conv2d_same' : conv2d_same,
         'conv2d_v3' : conv2d_v3,

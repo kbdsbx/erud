@@ -17,7 +17,7 @@ class dropout (payload) :
     def fprop(self, x) -> any :
         _posi = self.__posi
         
-        mash = np.random.rand(*x.shape) < _posi
+        mash = 1. * (np.random.rand(*x.shape) < _posi)
         self.__mash = mash
 
         return x * mash / _posi

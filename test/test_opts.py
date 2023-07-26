@@ -384,8 +384,24 @@ def test_batchnorm() :
 
     assert np.sum(z) == 0.
     assert np.sum(np.power(z, 2)) == 3.999999968000002
+
     [dx] = b.bprop(np.array([[1, 1],[1, 1]]))
+
     assert np.all(dx == np.array([[0, 0], [0, 0]]))
+
+from erud.opts.batchnorm2d import batchnorm2d
+
+def test_batchnorm2d() :
+    np.random.seed(1)
+    x = np.random.randn(2, 3, 4, 5)
+    b = batchnorm2d()
+    z = b.fprop(x)
+    assert np.sum(z) == -3.552713678800501e-15
+    assert z.shape == (2, 3, 4, 5)
+    assert np.sum(np.power(z, 2)) == 119.99999801735711
+
+    [dx] = b.bprop(np.random.randn(2, 3, 4, 5))
+    assert dx.shape == (2, 3, 4, 5)
 
 from erud.opts_extend.max_index import max_index
 
@@ -436,20 +452,20 @@ def test_pooling_max_2d_for_cpp() :
     X = X.reshape((2, 4, 6, 3))
     opt = max_pool(2, 2, 2)
     Z = opt.fprop(X)
-    print('Z:' +str(Z))
+    # print('Z:' +str(Z))
 
     dZ = np.array([((i+1) * 0.01) for i in range(36)])
     dZ = dZ.reshape((2, 2, 3, 3))
 
     [dW] = opt.bprop(dZ)
-    print('dW:' +str(dW))
+    # print('dW:' +str(dW))
 
     opt2 = max_pool_v3(2, 2, 2)
     Zn = opt2.fprop(X)
-    print('Zn:' +str(Zn))
+    # print('Zn:' +str(Zn))
 
     [dWn] = opt2.bprop(dZ)
-    print('dWn:' +str(dWn))
+    # print('dWn:' +str(dWn))
 
 
 
