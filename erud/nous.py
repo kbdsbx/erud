@@ -258,6 +258,10 @@ class nous :
     @property
     def code(self) :
         return self.__code
+    
+    @code.setter
+    def code(self, value) :
+        self.__code = value
 
     @property
     def g (self) :
@@ -893,4 +897,27 @@ class nous :
     # 注册新的初始化函数，如果有同名函数则覆盖
     def registerInitFunc (self, name : str, func ) :
         self.__init_func[name] = func
+
+    
+    # 导出nous数据
+    def exports (self) :
+        obj = {}
+        if self.g is not None :
+            obj['nodes'] = self.g.exports()
+
+        if self.code is not None :
+            obj['code'] = self.code
+        
+        return obj
+    
+    # 导入nous数据
+    def imports (self, value) :
+        if value['code'] :
+            self.code = value['code']
+
+        if value['nodes'] :
+            self.parse()
+            self.g.imports(value['nodes'])
+
+
 

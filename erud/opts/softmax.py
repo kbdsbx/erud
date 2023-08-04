@@ -9,15 +9,13 @@ class softmax(payload) :
     __a : any
     __axises : any
 
-    def fprop(self, x, axises) -> any :
+    def __init__(self, axises) : 
+        self.__axises = axises
+
+    def fprop(self, x) -> any :
         # ex = np.exp(x)
 
-        # if type of axises is int
-        ax = axises
-        if isinstance(axises, list) :
-            ax = tuple(axises)
-
-        self.__axises = ax
+        _ax = self.__axises
         
         # ex_sum = np.sum(ex, axis = ax, keepdims = True)
 
@@ -28,8 +26,8 @@ class softmax(payload) :
         # return ex / ex_sum
 
         # 增加了偏置防止数值差距过大导致结果均值离谱
-        _v = np.exp(x - np.max(x, axis = ax, keepdims = True))
-        _a = _v / np.sum(_v, axis = ax, keepdims = True)
+        _v = np.exp(x - np.max(x, axis = _ax, keepdims = True))
+        _a = _v / np.sum(_v, axis = _ax, keepdims = True)
 
         self.__a = _a
 

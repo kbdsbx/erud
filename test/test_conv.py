@@ -173,6 +173,7 @@ def no_test_conv () :
 
         
 
+# loading改了，会出问题
 def no_test_conv_with_save_and_load () :
     train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes = load_dataset()
 

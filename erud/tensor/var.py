@@ -4,14 +4,26 @@ if useGPU :
     import cupy as np
 else :
     import numpy as np
+from erud.upf.updateable import updateable
+from erud.upf.norm import norm
+from erud.upf.momentum import momentum 
+from erud.upf.adam import adam
+from inspect import isfunction
 
 class var (payload) :
     __data : any = None
-    __update_func = None
+    __update_func : updateable = None
         
+    __update_func_list = {
+        'norm' : norm,
+        'adam' : adam,
+        'momentum' : momentum
+    }
+
     @property
     def data (self) -> any :
         return self.__data
+    
     
     # 变量赋值
     @data.setter
@@ -43,7 +55,10 @@ class var (payload) :
     def bprop(self, dz = None) -> list[any]:
         # 反向传播更新参数
         if dz is not None and self.__update_func is not None :
-            res = self.__update_func( self.__data, dz )
+            if isinstance(self.__update_func, updateable) :
+                res = self.__update_func.updateFunc(self.__data, dz)
+            if isfunction(self.__update_func) :
+                res = self.__update_func(self.__data, dz)
             if res is not None :
                 self.__data = res
 
@@ -63,17 +78,18 @@ class var (payload) :
         name = (super(var, self).exports())["name"]
 
         exp = {
-            'type' : 'var',
+            'class' : 'var',
             'name' : name,
-            'payload' : '',
         }
 
         # 只导出具有更新方法的学习参数，没有更新方法的固定参数和样本不导出
         if self.__update_func is not None :
             if isinstance(self.__data, np.ndarray) :
-                exp['payload'] = self.__data.tolist()
+                exp['data'] = self.__data.tolist()
             else :
-                exp['payload'] = self.__data
+                exp['data'] = self.__data
+            
+            exp['updateable'] = self.__update_func.exports()
         
         return exp
     
@@ -81,12 +97,18 @@ class var (payload) :
     def imports (self, value) :
         super(var, self).imports(value)
 
-        v = value['payload']
-        if v :
+        if 'data' in value :
+            v = value['data']
             if isinstance(v, list) :
                 self.__data = np.array(v)
             else :
                 self.__data = v
+        
+        # 更新方法导入
+        if 'updateable' in value :
+            ob = value['updateable']
+            self.__update_func = self.__update_func_list[ob['class']](ob['rate'])
+            self.__update_func.imports(ob)
         
     
 

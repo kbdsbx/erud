@@ -92,14 +92,14 @@ class ComputationNode :
             'btimespend' : self.__btimespend,
             'ftimetotal' : self.__ftimetotal,
             'btimetotal' : self.__btimetotal,
-            **self.__data.exports()
+            'payload' : self.__data.exports()
         }
         return obj
     
     def imports(self, value) :
-        self.__data.imports(value)
         self.__code = value['code']
         self.__ftimespend = value['ftimespend']
         self.__btimespend = value['btimespend']
         self.__ftimetotal = value['ftimetotal']
         self.__btimetotal = value['btimetotal']
+        self.__data.imports(value['payload'])

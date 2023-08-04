@@ -3,11 +3,16 @@ if useGPU :
     import cupy as np
 else :
     import numpy as np
+from erud.upf.updateable import updateable
 
-class momentum :
+class momentum(updateable) :
     __velocity : any = None
     __rate : float
     __beta : float
+
+    @property
+    def rate (self) :
+        return self.__rate
 
     def __init__ (self, rate, beta = 0.9) :
         self.__rate = rate
@@ -24,3 +29,17 @@ class momentum :
         self.__velocity = (_beta * self.__velocity) + ((1. - _beta) * dz)
 
         return z - (_rate * self.__velocity)
+    
+
+    def exports(self) :
+        return {
+            'class' : 'momentum',
+            'rate' : self.__rate,
+            'beta' : self.__beta,
+            'velocity' : self.__velocity,
+        }
+    
+    def imports(self, value) :
+        self.__rate = value['rate']
+        self.__beta = value['beta']
+        self.__velocity = value['velocity']

@@ -4,13 +4,18 @@ if useGPU :
 else :
     import numpy as np
 from erud._utils import epsilon as eps
+from erud.upf.updateable import updateable
 
-class adam : 
+class adam (updateable) : 
     __velocity : any = None
     __square : any = None
     __rate : float
     __beta_momentum : float
     __beta_rms : float
+
+    @property
+    def rate (self) :
+        return self.__rate
 
     def __init__ (self, rate, beta_momentum = 0.9, beta_rms = 0.999) :
         self.__rate = rate
@@ -33,3 +38,20 @@ class adam :
         self.__square = (_beta2 * self.__square) + ((1. - _beta2) * np.power(dz, 2))
 
         return z - (_rate * self.__velocity / np.sqrt(self.__square + eps))
+    
+    def exports(self) :
+        return {
+            'class' : 'adam',
+            'rate' : self.__rate,
+            'beta_momentum' : self.__beta_momentum,
+            'beta_rms' : self.__beta_rms,
+            'velocity' : self.__velocity,
+            'square' : self.__square,
+        }
+    
+    def imports(self, value) :
+        self.__rate = value['rate']
+        self.__beta_momentum = value['beta_momentum']
+        self.__beta_rms = value['beta_rms']
+        self.__velocity = value['velocity']
+        self.__square = value['square']

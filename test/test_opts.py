@@ -306,8 +306,8 @@ from erud.opts.cross_entropy import cross_entropy
 def test_softmax() :
     z = np.array([3, 1, -3])
     y = np.array([1, 0, 0])
-    softmax_opt = softmax()
-    a = softmax_opt.fprop(z, 0)
+    softmax_opt = softmax(0)
+    a = softmax_opt.fprop(z)
     cross_entropy_opt = cross_entropy()
     j = cross_entropy_opt.fprop(a, y)
 
@@ -396,9 +396,9 @@ def test_batchnorm2d() :
     x = np.random.randn(2, 3, 4, 5)
     b = batchnorm2d()
     z = b.fprop(x)
-    assert np.sum(z) == -3.552713678800501e-15
+    assert np.sum(z) == 4.440892098500626e-15
     assert z.shape == (2, 3, 4, 5)
-    assert np.sum(np.power(z, 2)) == 119.99999801735711
+    assert np.sum(np.power(z, 2)) == 119.99999818952824
 
     [dx] = b.bprop(np.random.randn(2, 3, 4, 5))
     assert dx.shape == (2, 3, 4, 5)

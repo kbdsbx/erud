@@ -16,7 +16,7 @@ def norm (*args) :
     ### 参数
     rate : 更新率
     """
-    return norm_class(*args).updateFunc
+    return norm_class(*args)
 
 def momentum (*args) :
     """
@@ -29,7 +29,7 @@ def momentum (*args) :
     rate : 更新率
     beta : 移动加权平均的权重
     """
-    return momentum_class(*args).updateFunc
+    return momentum_class(*args)
 
 def adam (*args) :
     """
@@ -43,4 +43,4 @@ def adam (*args) :
     beta_momentum : 移动加权平均的权重
     beta_rms: 平方根调整动量的权重
     """
-    return adam_class(*args).updateFunc
+    return adam_class(*args)

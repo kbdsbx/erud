@@ -13,13 +13,6 @@ class payload :
         self.__name = n
         return n
     
-    # 缓存用于调试
-    
-    # 前向传播的计算缓存
-    fcache : any = None
-    # 反向传播的计算缓存
-    bcache : list[any] = None
-    
     # 亟待子类实现的前向传播方法
     # 提供多个变量，提供变量的个数取决于指向此节点的路径的个数
     # 返回一个变量，通常为提供给下一层节点的计算值
@@ -35,16 +28,21 @@ class payload :
     # 导出方法
     # 任何需要导出值的子类需要实现的方法，用户计算图将运行中的临时值以JSON的方式保存在文件中
     # 不需要导出数值的子类不需要实现此方法
+    # 导出方法除了能够用在导出文件上，也可以用在迁移上
     def exports(self) -> any : 
-        return {
-            'name' : self.__name or str(self.__class__.__name__)
+        obj = {
+            'class' : str(self.__class__.__name__)
         }
+        if self.__name is not None :
+            obj['name'] = self.__name
+        return obj
     
     # 导入方法
     # 任何需要导入值的子类需要实现的方法，从用户文件缓存中读入值来还原计算图
     # 不需要导入数值的子类不需要实现此方法
     def imports(self, value) :
-        self.__name = value["name"]
+        if 'name' in value :
+            self.__name = value["name"]
 
     def __str__ (self) -> str:
         return self.name
