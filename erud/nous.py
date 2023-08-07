@@ -41,6 +41,8 @@ from erud.opts_extend.accuracy import accuracy
 from erud.opts_extend.threshold import threshold
 from erud.opts_extend.max_index import max_index
 
+import erud.upf as upf
+
 # 解析代码，构造计算图
 class nous :
     """
@@ -247,6 +249,13 @@ class nous :
         'zeros' : (lambda x : np.zeros(tuple(x))),
         'xavier' : (lambda x : np.random.randn(*x[0]) * np.sqrt(1. / x[1])),
         'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2. / x[1]))
+    }
+
+    # 可用的更新函数
+    __update_func = {
+        'norm' : upf.norm,
+        'momentum' : upf.momentum,
+        'adam' : upf.adam,
     }
 
     # 输入语句
@@ -493,6 +502,13 @@ class nous :
             return True
         
         return False
+
+
+    def _isUpdateFunc(self, el:str) -> bool :
+        mp = "|".join(self.__update_func.keys())
+        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s\-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s\-]+?\s*){0,1}\))$", re.U)
+
+        return mc.search(el) is not None
     
 
     # 创建合法参数数组，用于变量的初始化方法
@@ -568,25 +584,57 @@ class nous :
             return None
 
         raise ParseError('"%s" is a illegal form of value.' % (el))
+
+
+    def _makeUpdateFunc(self, el:str) -> any :
+        mp = "|".join(self.__update_func.keys())
+        mc = re.compile(r"^(" + mp + r"){0,1}(\((\s*[0-9\.e\(\)\[\],\s-]+?\s*,\s*)*(\s*[0-9\.e\(\)\[\],\s-]+?\s*){0,1}\))$", re.U)
+        mg= mc.search(el)
+        # mg[1] 为方法名
+        # mg[2] 为初始化参数
+        f = mg[1]
+        arg_str = self._stripBrackets(mg[2])
+        args = self._makeArguments(arg_str)
+        return self.__update_func[f](*args)
     
     # 是否是合法变量
     def _isVariable(self, el:str) -> bool:
-        sp_idx = el.find(":")
+        # sp_idx = el.find(":")
 
-        if -1 == sp_idx :
-            if self._isName(el):
-                return True
-            elif self._isValue(el):
+        # if -1 == sp_idx :
+        #     if self._isName(el):
+        #         return True
+        #     elif self._isValue(el):
+        #         return True
+        #     else :
+        #         return False
+        # else :
+        #     name_str = el[:sp_idx]
+        #     value_str = el[sp_idx + 1:]
+        #     if self._isName(name_str) and self._isValue(value_str) :
+        #         return True
+        #     else :
+        #         return False
+        
+        sp_block = el.split(":")
+
+        if len(sp_block) == 1 :
+            if self._isName(sp_block[0]) or self._isValue(sp_block[0]) or self._isUpdateFunc(sp_block[0]) :
                 return True
             else :
                 return False
-        else :
-            name_str = el[:sp_idx]
-            value_str = el[sp_idx + 1:]
-            if self._isName(name_str) and self._isValue(value_str) :
+        elif len(sp_block) == 2 :
+            if self._isName(sp_block[0]) and self._isValue(sp_block[1]) or self._isName(sp_block[0]) and self._isUpdateFunc(sp_block[1]) or self._isValue(sp_block[0]) and self._isUpdateFunc(sp_block[1]) :
                 return True
             else :
                 return False
+        elif len(sp_block) == 3 :
+            if self._isName(sp_block[0]) and self._isValue(sp_block[1]) and self._isUpdateFunc(sp_block[2]) :
+                return True
+            else :
+                return False
+        
+        return False
         
 
     # 创建变量节点
@@ -601,37 +649,47 @@ class nous :
     # 7. X:zeros(5, 10) 名称X，类型为5x10矩阵，值为zeros函数产生的全零张量
     # 8. X:ones(5, 10) 名称X，类型为5x10矩阵，值为ones函数产生的全一张量
     def _makeVariable(self, el:str) -> node :
-        sp_idx = el.find(":")
+        sp_block = el.split(":")
 
         name = None
         value = None
+        updateFunc = None
         
         # 如果没有分号，则匹配名称或值
-        if -1 == sp_idx :
-            if self._isName(el) :
-                name = el
-            elif self._isValue(el) :
-                value = self._makeValue(el)
+        if len(sp_block) == 1:
+            if self._isName(sp_block[0]) :
+                name = sp_block[0]
+            elif self._isValue(sp_block[0]) :
+                value = self._makeValue(sp_block[0])
+            elif self._isUpdateFunc(sp_block[0]) :
+                updateFunc = self._makeUpdateFunc(sp_block[0])
             else :
                 raise ParseError('Can not create variable from "%s".' % (el))
         # 如果有分号，则分别匹配名称和值
+        elif len(sp_block) == 2 :
+            if self._isName(sp_block[0]) and self._isValue(sp_block[1]) :
+                name = sp_block[0]
+                value = self._makeValue(sp_block[1])
+            elif self._isName(sp_block[0]) and self._isUpdateFunc(sp_block[1]) :
+                name = sp_block[0]
+                updateFunc = self._makeUpdateFunc(sp_block[1])
+            elif self._isValue(sp_block[0]) and self._isUpdateFunc(sp_block[1]) :
+                value = self._makeValue(sp_block[0])
+                updateFunc = self._makeUpdateFunc(sp_block[1])
+            else :
+                raise ParseError('Can not create variable from "%s".' % (el))
+        elif len(sp_block) == 3 :
+            if self._isName(sp_block[0]) and self._isValue(sp_block[1]) and self._isUpdateFunc(sp_block[2]) :
+                name = sp_block[0]
+                value = self._makeValue(sp_block[1])
+                updateFunc = self._makeUpdateFunc(sp_block[2])
+            else :
+                raise ParseError('Can not create variable from "%s".' % (el))
         else :
-            name_str = el[:sp_idx]
-            value_str = el[sp_idx + 1:]
-            if self._isName(name_str) :
-                if name_str == '' :
-                    name = None
-                else :
-                    name = name_str
-            else :
-                raise ParseError('Can not create variable from "%s".' % (el))
+            raise ParseError('Can not create variable from "%s".' % (el))
 
-            if self._isValue(value_str) :
-                value = self._makeValue(value_str)
-            else :
-                raise ParseError('Can not create variable from "%s".' % (el))
         
-        n = node(var(value), code = el)
+        n = node(var(value, updateFunc), code = el)
         self._setOperatorName(n, name)
 
         return n
@@ -897,6 +955,10 @@ class nous :
     # 注册新的初始化函数，如果有同名函数则覆盖
     def registerInitFunc (self, name : str, func ) :
         self.__init_func[name] = func
+    
+    # 注册新的参数更新函数，如果有同名函数则覆盖
+    def registerUpdateFunc(self, name : str, func) :
+        self.__update_func[name] = func
 
     
     # 导出nous数据

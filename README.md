@@ -215,12 +215,20 @@ t -> y:$$
     * ``X:ones(10, 15)``: 声明一个张量变量，维度为(10,15)，命名为'X'，并赋值为1
     * ``X:he((10, 15), 10)``: 声明一个张量变量，维度为(10,15)，命名为'X'，使用`he`进行初始化
     * ``X:[[1,2], [3,4]]``: 声明一个张量变量，维度为(2,2)，命名为'X'，并赋值为`[[1,2],[3,4]]`
+    * ---- 新增更新函数部分 ----
+    * ``X:[1, 2]:norm(0.9)``: 声明一个张量变量，维度(2)，命名为'X'，赋值`[1,2]`，反向传播时使用`norm`函数更新此变量，学习率为0.9
 
     目前已有的初始化函数
     1. `zero(<tuple>)`或`(<tuple>)`: 执行零初始化
     2. `ones(<tuple>)`: 执行1初始化
     3. `randn(<tuple>)`: 执行正态随机初始化
     4. `he(<tuple>, layer_num)`: 执行he初始化
+    4. `xavier(<tuple>, layer_num)`: 执行xavier初始化
+
+    目前已有的更新函数
+    1. `norm(<rate>)` : norm更新函数
+    1. `momentum(<rate>, <beta> = 0.9)` : momentum更新函数，后一个参数可选
+    1. `adam(<rate>, <beta_momentum> = 0.9, beta_rms = 0.999)` : adam更新函数
 
 2. 运算符操作
 
@@ -408,6 +416,36 @@ t -> y:$$
     2. 参数格式要满足一般表达式格式，比如不能出现半个括号，这样就会解析出错
     3. 命名为空的字符串`''`也是一个初始化函数，在执行`X:(5, 3, 4)`时调用，并可以被`g.registerInitFunc('', my_init_func)`覆盖
     4. 函数参数只允许类型为标量、数组、元组类型的参数，不允许字符串及其他类型的参数，例如`X:my_init_func(abc)`是非法的，而`X:my_init_func(5.5, [1, 2], (1,2, 3))`是合法的，将会把参数`[5.5, [1,2], (1,2,3)]`传入自定义方法`my_init_func`
+
+### 自定义参数更新函数
+
+目前默认参数更新函数有`norm`，`momentum`和`adam`，已经更能满足大部分需要，对少部分无法满足的需求可以添加自定义的参数更新函数
+
+1. 编写初始化函数类
+> 初始化函数是一个类，并暴露update_func为真正的更新函数，诚挚建议此类继承`updateable`类
+    ```python
+    class my_update_func (updateable) :
+
+        def updateFunc(self, z, dz) :
+            z = <update by dz>
+            return z
+    ```
+
+2. 将参数更新类注册到图
+    ```python
+    g.registerUpdateFunc('my_update_func', my_update_func)
+    ```
+
+3. 使用新的参数更新类
+    ```python
+    g = nous (
+        '''
+        X:(5,4,2):my_update_func(<some args) add Y -> Z:$$
+        '''
+    ).parse()
+    ```
+
+4. 自定义类可以覆盖已有的类或内置类
 
 
 # 长期学习的缓存

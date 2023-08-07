@@ -149,10 +149,22 @@ def test_is_init_func () :
     assert n._isInitFunc('randn(-1.1, 1e-8)') == True
     assert n._isInitFunc('randn(-1.1, 1e-8, [[1,2], [3,4]], (5, 6))') == True
     assert n._isInitFunc('randn((1, 2), 1e-8, [[1,2], [3,4]], (5, 6))') == True
+    assert n._isInitFunc('adam(0.008, 0.88, 0.8)') == False
+
+def test_is_update_func () :
+    n = nous()
+    
+    assert n._isUpdateFunc('randn(5,3,2)') == False
+    assert n._isUpdateFunc('norm') == False
+    assert n._isUpdateFunc('norm(0.9)') == True
+    assert n._isUpdateFunc('adam(0.9, 0.99, 0.999)') == True
+    assert n._isUpdateFunc('momentum(2, 1e-8, 0.3)') == True
+    assert n._isUpdateFunc('momentum(2, [[1,2], [3,4]], 0.3)') == True
 
 def test_is_name() :
     n = nous()
 
+    assert n._isName('') == True
     assert n._isName('X') == True
     assert n._isName('_4322') == True
     assert n._isName('abc_123') == True
@@ -174,10 +186,12 @@ def test_is_tensor() :
     assert n._isTensor('[[1,2], [4,5]][]') == False
     assert n._isTensor('') == False
     assert n._isTensor('abc') == False
+    assert n._isTensor('adam(0.00008, 0.88, 0.8)') == False
 
 def test_is_value () :
     n = nous()
 
+    assert n._isValue('5') == True
     assert n._isValue('123') == True
     assert n._isValue('[[1,2], [9.1, 4]]') == True
     assert n._isValue('randn(5,2, 4 )') == True
@@ -191,6 +205,7 @@ def test_is_value () :
     assert n._isValue('add') == False
     assert n._isValue('$$')== False
     assert n._isValue('_1:(5, 2, 4)') == False
+    assert n._isValue('adam(0.0008, 0.88, 0.8)') == False
 
 def test_make_value () :
     n = nous()
@@ -229,6 +244,15 @@ def test_make_value () :
     assert t[0][0] == -1
     assert t[1][1] == 5.554
 
+from erud.upf.norm import norm
+from erud.upf.adam import adam
+
+def test_make_update_func() :
+    n = nous()
+    uf = n._makeUpdateFunc('norm(0.8)')
+    assert isinstance(uf, norm)
+    assert uf.rate == 0.8
+
 # 变量格式
 def test_make_variable() :
     n = nous()
@@ -246,7 +270,7 @@ def test_make_variable() :
     assert nd.data.data == 5
 
     nd = n._makeVariable(':5')
-    assert nd.data.name == None
+    assert nd.data.name == ''
     assert nd.data.data == 5
 
     nd = n._makeVariable('X:5')
@@ -300,6 +324,27 @@ def test_make_variable() :
     assert nd.data.data[0][0][0] == 0
     assert nd.data.data[4][1][3] == 0
 
+    nd = n._makeVariable('_1:(5):norm(0.0008)')
+    assert nd.data.name == '_1'
+    assert isinstance(nd.data.data, np.ndarray)
+    assert nd.data.data.shape == (5,)
+    assert nd.data.data[0] == 0
+    assert isinstance(nd.data.update_func, norm)
+    assert nd.data.update_func.rate == 0.0008
+
+    nd = n._makeVariable('X:adam(0.0008, 0.9, 0.99)')
+    assert nd.data.name == 'X'
+    assert nd.data.data == None
+    assert isinstance(nd.data.update_func, adam)
+    assert nd.data.update_func.rate == 0.0008
+
+
+    nd = n._makeVariable('randn(2, 5, 4):adam(0.0008, 0.9, 0.99)')
+    assert nd.data.name == None
+    assert isinstance(nd.data.data, np.ndarray)
+    assert nd.data.data.shape == (2, 5, 4)
+    assert isinstance(nd.data.update_func, adam)
+    assert nd.data.update_func.rate == 0.0008
 
     with test.raises(ParseError) :
         n._makeVariable('X:X:X')
