@@ -27,7 +27,7 @@ class batchnorm2d(payload) :
     __m : int = None
     __n : int = None
 
-    def __init__ (self, is_training = 1, momentum = 0.99) :
+    def __init__ (self, is_training = 1, momentum = 0.999) :
         self.__is_training = is_training
         self.__momentum = momentum
         return 
@@ -91,7 +91,7 @@ class batchnorm2d(payload) :
     def imports (self, value) : 
         super(batchnorm2d, self).imports(value)
 
-        self.__moving_mean = value['mean']
-        self.__moving_var = value['var']
+        self.__moving_mean = np.array(value['mean'])
+        self.__moving_var = np.array(value['var'])
 
         

@@ -34,7 +34,6 @@ class rest (payload) :
         exp = {
             'type' : 'rest',
             'name' : name,
-            'payload' : '',
         }
 
         if isinstance(self.__data, np.ndarray) :

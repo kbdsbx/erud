@@ -36,10 +36,10 @@ class momentum(updateable) :
             'class' : 'momentum',
             'rate' : self.__rate,
             'beta' : self.__beta,
-            'velocity' : self.__velocity,
+            'velocity' : self.__velocity.tolist(),
         }
     
     def imports(self, value) :
         self.__rate = value['rate']
         self.__beta = value['beta']
-        self.__velocity = value['velocity']
+        self.__velocity = np.array(value['velocity'])

@@ -45,13 +45,13 @@ class adam (updateable) :
             'rate' : self.__rate,
             'beta_momentum' : self.__beta_momentum,
             'beta_rms' : self.__beta_rms,
-            'velocity' : self.__velocity,
-            'square' : self.__square,
+            'velocity' : self.__velocity.tolist(),
+            'square' : self.__square.tolist(),
         }
     
     def imports(self, value) :
         self.__rate = value['rate']
         self.__beta_momentum = value['beta_momentum']
         self.__beta_rms = value['beta_rms']
-        self.__velocity = value['velocity']
-        self.__square = value['square']
+        self.__velocity = np.array(value['velocity'])
+        self.__square = np.array(value['square'])

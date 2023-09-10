@@ -35,7 +35,6 @@ class const (payload) :
         exp = {
             'type' : 'const',
             'name' : name,
-            'payload' : '',
         }
 
         if isinstance(self.__data, np.ndarray) :
