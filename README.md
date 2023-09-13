@@ -863,3 +863,11 @@ print("Cost after iteration {}: {}".format(num_iterations, g.getData('J')))
 
 ```
 
+# 依赖库清单
+
+* cupy-cuda12x
+* numpy
+* pybind11
+* pytest
+* h5py
+* scipy
