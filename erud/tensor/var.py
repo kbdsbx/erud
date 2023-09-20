@@ -107,8 +107,9 @@ class var (payload) :
         # 更新方法导入
         if 'updateable' in value :
             ob = value['updateable']
-            self.__update_func = self.__update_func_list[ob['class']](ob['rate'])
-            self.__update_func.imports(ob)
+            if ob is not None :
+                self.__update_func = self.__update_func_list[ob['class']](ob['rate'])
+                self.__update_func.imports(ob)
         
     
 

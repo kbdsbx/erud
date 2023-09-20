@@ -40,18 +40,28 @@ class adam (updateable) :
         return z - (_rate * self.__velocity / np.sqrt(self.__square + eps))
     
     def exports(self) :
-        return {
+        obj = {
             'class' : 'adam',
             'rate' : self.__rate,
             'beta_momentum' : self.__beta_momentum,
             'beta_rms' : self.__beta_rms,
-            'velocity' : self.__velocity.tolist(),
-            'square' : self.__square.tolist(),
         }
+
+        if self.__velocity is None :
+            obj['velocity'] = None
+        else :
+            obj['velocity'] = self.__velocity.tolist()
+
+        if self.__square is None :
+            obj['square'] = None
+        else :
+            obj['square'] = self.__square.tolist()
     
     def imports(self, value) :
         self.__rate = value['rate']
         self.__beta_momentum = value['beta_momentum']
         self.__beta_rms = value['beta_rms']
-        self.__velocity = np.array(value['velocity'])
-        self.__square = np.array(value['square'])
+        if value['velocity'] != None :
+            self.__velocity = np.array(value['velocity'])
+        if value['square'] != None :
+            self.__square = np.array(value['square'])
