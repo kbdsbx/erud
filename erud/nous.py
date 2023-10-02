@@ -285,6 +285,36 @@ class nous :
             el = el[1:-1]
         return el
 
+
+    # 如果节点不在图里，则插入节点
+    # 连接两个节点，无论节点时单个节点还是节点数组
+    def _link(self, left, right, g:graph) :
+        leftArr = []
+        rightArr = []
+        if isinstance(left, list) :
+            for l in left:
+                if not g.hasNode(l) :
+                    g.insertNode(l)
+            leftArr = left
+        else :
+            if not g.hasNode(left) :
+                g.insertNode(left)
+            leftArr = [left]
+        
+        if isinstance(right, list) :
+            for r in right :
+                if not g.hasNode(r) :
+                    g.insertNode(r)
+            rightArr = right
+        else :
+            if not g.hasNode(right) :
+                g.insertNode(right)
+            rightArr = [right]
+        
+        for l in leftArr :
+            for r in rightArr :
+                g.addEdge(l, r)
+
     
     # 从代码块中获得下一个元素
     # str : str 代码块
@@ -695,6 +725,41 @@ class nous :
         return n
 
 
+    # 是否是合法变量组，包含未创建的变量和已创建的命名引用
+    def _isVariableArray(self, el:str, g:graph) -> bool :
+        ell = el.split('|')
+
+        if len(ell) <= 1 :
+            return False
+        
+        for i in ell :
+            if i == '' :
+                continue
+            if  not self._isReference(i, g) and not self._isVariable(i) :
+                return False
+        
+        return True
+    
+    # 返回节点数组
+    # 已有的同名节点返回引用，没有的创建
+    def _makeVariableArray(self, el:str, g:graph) -> list :
+        ell = el.split('|')
+
+        vlist = []
+        for i in ell :
+            if i == '' :
+                continue
+
+            if self._isReference(i, g) :
+                vlist.append(self._getReference(i, g))
+            
+            elif self._isVariable(i) :
+                vlist.append(self._makeVariable(i))
+
+        return vlist
+
+     
+
     # 给操作符命名
     def _setOperatorName(self, n:node, el:str) :
         n.data.name = el
@@ -803,10 +868,29 @@ class nous :
                 # 如果左操作数、右操作数和操作符同时存在，此时又出现一个新的操作符，则满足结构4
                 else : 
                     g.insertNode(opt)
-                    if not g.hasNode(right) :
-                        g.insertNode(right)
-                    g.addEdge(left, opt)
-                    g.addEdge(right, opt)
+
+                    # self._insertIfNot(right, g)
+                    # if isinstance(right, list) :
+                    #     for r in right :
+                    #         if not g.hasNode(r) :
+                    #             g.insertNode(r)
+                    # else :
+                    #     if not g.hasNode(right) :
+                    #         g.insertNode(right)
+                    
+                    self._link(left, opt, g)
+                    # if isinstance(left, list) :
+                    #     for l in left :
+                    #         g.addEdge(l, opt)
+                    # else :
+                    #     g.addEdge(left, opt)
+                    
+                    self._link(right, opt, g)
+                    # if isinstance(right, list) :
+                    #     for r in right :
+                    #         g.addEdge(r, opt)
+                    # else :
+                    #     g.addEdge(right, opt)
                     # 操作符成为下一层的左操作数
                     left = opt
                     opt = self._makeOperator(el)
@@ -824,6 +908,23 @@ class nous :
                 elif right is None :
                     right = self._getReference(el, g)
 
+            # 判断是否是合法变量组
+            elif self._isVariableArray(el, g) :
+                if left is None :
+                    left = self._makeVariableArray(el, g)
+                    # 将所有左操作数加入图
+                    for l in left :
+                        if not g.hasNode(l) :
+                            g.insertNode(l)
+                
+                elif opt is None :
+                    raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
+                
+                elif right is None :
+                    right = self._makeVariableArray(el)
+
+                else :
+                    raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (right.code, el))
             
             # 判断是否是合法变量
             elif self._isVariable(el) :
@@ -873,11 +974,28 @@ class nous :
                 # 操作符不为空，则构建此层，此层的操作符成为下一层的左操作数
                 elif opt is not None :
                     g.insertNode(opt)
-                    g.addEdge(left, opt)
+                    # 如果是多个左操作数，则全部连接到操作符
+
+                    self._link(left, opt, g)
+                    # if isinstance(left, list) :
+                    #     for l in left :
+                    #         g.addEdge(l, opt)
+                    # else :
+                    #     g.addEdge(left, opt)
+
                     if right is not None:
-                        if not g.hasNode(right) :
-                            g.insertNode(right)
-                        g.addEdge(right, opt)
+                        # 如果是多个右操作数，则全部连接到操作符
+                        self._link(right, opt, g)
+                        # if isinstance(right, list) :
+                        #     for r in right :
+                        #         if not g.hasNode(r) :
+                        #             g.insertNode(r)
+                        #         g.addEdge(r, opt)
+                        # else :
+                        #     if not g.hasNode(right) :
+                        #         g.insertNode(right)
+                        #     g.addEdge(right, opt)
+
                     left = opt
                     opt = None
                     right = None
@@ -898,12 +1016,14 @@ class nous :
 
         # 对还未加入图的节点进行收尾，并返回汇点
         if opt is not None :
-            g.insertNode(opt)
-            g.addEdge(left, opt)
+            self._link(left, opt, g)
+            # g.insertNode(opt)
+            # g.addEdge(left, opt)
             if right is not None :
-                if not g.hasNode(right) :
-                    g.insertNode(right)
-                g.addEdge(right, opt)
+                self._link(right, opt, g)
+                # if not g.hasNode(right) :
+                #     g.insertNode(right)
+                # g.addEdge(right, opt)
             left = opt
         
         return left

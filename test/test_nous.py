@@ -346,6 +346,13 @@ def test_make_variable() :
     assert isinstance(nd.data.update_func, adam)
     assert nd.data.update_func.rate == 0.0008
 
+    nd = n._makeVariable('b1:(64):norm(0.002)')
+    assert nd.data.name == 'b1'
+    assert isinstance(nd.data.data, np.ndarray)
+    assert nd.data.data.shape == (64,)
+    assert isinstance(nd.data.update_func, norm)
+    assert nd.data.update_func.rate == 0.002
+
     with test.raises(ParseError) :
         n._makeVariable('X:X:X')
 
@@ -367,6 +374,66 @@ def test_make_variable() :
     with test.raises(ParseError) :
         n._makeVariable('J:$$')
     
+def test_is_variable_array() :
+
+    n = nous()
+    g = n.parse()
+
+    assert n._isVariableArray('W1|W2', g) == True
+    assert n._isVariableArray('W1', g) == False
+    assert n._isVariableArray('W1|randn(2, 5, 4):adam(0.0008, 0.9, 0.99)', g) == True
+    assert n._isVariableArray('$$|W1', g) == False
+    assert n._isVariableArray('[[1.1, 0], [-4, 0.33]]|[[1.1, 0], [-4, 0.33]]', g) == True
+    assert n._isVariableArray('|T1|T2|T3|T4|T5|T6|', g) == True
+
+    n = nous( 'W1:6 add W2:randn(2, 5, 4):adam(0.0008, 0.9, 0.99)')
+    g = n.parse()
+
+    assert n._isVariableArray('W1|W2', g) == True
+
+def test_make_variable_array() :
+    n = nous()
+    g = n.parse()
+
+    nds = n._makeVariableArray('W1|W2', g)
+    assert len(nds) == 2
+    assert nds[0].data.name == 'W1'
+    assert nds[1].data.name == 'W2'
+
+    nds = n._makeVariableArray('W1|randn(2, 5, 4):adam(0.0008, 0.9, 0.99)', g)
+    assert len(nds) == 2
+    assert nds[0].data.name == 'W1'
+    assert nds[1].data.name == None
+    assert isinstance(nds[1].data.data, np.ndarray)
+    assert nds[1].data.data.shape == (2, 5, 4)
+    assert isinstance(nds[1].data.update_func, adam)
+    assert nds[1].data.update_func.rate == 0.0008
+
+    nds = n._makeVariableArray('[[1.1, 0], [-4, 0.33]]|[[1.1, 0], [-4, 0.33]]', g)
+    assert len(nds) == 2
+    assert nds[0].data.name == None
+    assert nds[1].data.name == None
+    assert isinstance(nds[0].data.data, np.ndarray)
+    assert isinstance(nds[1].data.data, np.ndarray)
+    assert nds[0].data.data.shape == (2, 2)
+    assert nds[1].data.data.shape == (2, 2)
+
+    nds = n._makeVariableArray('|T1|T2|T3|T4|T5|T6|', g)
+    assert len(nds) == 6
+
+    n = nous( 'W1:6 add W2:randn(2, 5, 4):adam(0.0008, 0.9, 0.99)')
+    g = n.parse()
+
+    nds = n._makeVariableArray('W1|W2', g)
+    print(nds)
+    assert len(nds) == 2
+    assert nds[0].data.name == 'W1'
+    assert nds[1].data.name == 'W2'
+    assert nds[0].data.data == 6
+    assert isinstance(nds[1].data.data, np.ndarray)
+    assert nds[1].data.data.shape == (2, 5, 4)
+    assert isinstance(nds[1].data.update_func, adam)
+    assert nds[1].data.update_func.rate == 0.0008
 
 def test_nous_is_rest () :
     n = nous()
@@ -504,6 +571,9 @@ def test_process_block() :
     [res] = g.fprop()
 
     assert res.data == -65
+
+    g = graph()
+    n._processBlock('X:(100, 103) -> matmul W1:xavier((103, 64), 103):norm(0.002) add b1:(64):norm(0.002) -> relu', g)
 
     # g = graph()
     # n._processBlock('a:5 add b:10 as u mul (c:6 sub d:19 as v) as w div e:3 as t then y:$$', g)
