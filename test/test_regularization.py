@@ -117,8 +117,7 @@ def no_test_l2_regularization () :
     num_iterations = 30000 
 
     np.random.seed(1)
-    g = nous(
-        '''
+    oldcode = '''
         X:(211, 2) ->
 
             matmul W1:he((2, 20), 4) add b1:(20) -> relu ->
@@ -134,6 +133,23 @@ def no_test_l2_regularization () :
 
         entropy_cost add l2_reg_cost -> J:$$
         '''
+    
+    newcode = '''
+        X:(211, 2) ->
+
+            matmul W1:he((2, 20), 4) add b1:(20) -> relu ->
+            matmul W2:he((20, 3), 40) add b2:(3) -> relu ->
+            matmul W3:he((3, 1), 6) add b3:(1) -> sigmoid ->
+        
+        cross_entropy Y:(211, 1) -> cost ->
+
+        # L2 正则
+        # 正则运算符，首个多参数运算符
+        # 1/m * lambda / 2 * sum_all(w**2), w in W1, W2, W3
+        add (W1|W2|W3 L2_regularization(0.7)) -> J:$$
+        '''
+    g = nous(
+        newcode
     ).parse()
 
     g.setData('X', train_X.T)

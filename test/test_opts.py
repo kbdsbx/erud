@@ -515,6 +515,28 @@ def test_conv2d_v2_for_cpp() :
     [dXn, dWn] = conv_v3.bprop(dZ)
     # print('dX :' + str(dXn))
     # print('dW :' + str(dWn))
+
+from erud.opts.L2_regularization import L2_regularization
+
+def test_l2_regularization() :
+
+    W1 = np.array([[5, 6], [2, 4]])
+    W2 = np.array([[9, 1]])
+    W3 = np.array([[5, 3, 6], [2, 7, 4], [-5, 0.1, -6.5]])
+
+    opt = L2_regularization(0.01)
+
+    Z = opt.fprop(W1, W2, W3)
+
+    assert Z == 0.12308666666666666
+
+    dz = 0.5
+
+    dW1, dW2, dW3 = opt.bprop(dz)
+
+    assert np.all(dW1 == np.array([[0.0016666666666666666, 0.002], [0.0006666666666666666, 0.0013333333333333333]]))
+    assert np.all(dW2 == np.array([[0.003,  0.0003333333333333333]]))
+    assert np.all(dW3 == np.array([[0.0016666666666666666, 0.001, 0.002], [0.0006666666666666666, 0.0023333333333333333, 0.0013333333333333333], [-0.0016666666666666666, 0.000033333333333333335, -0.0021666666666666666]]))
     
 
 

@@ -27,6 +27,7 @@ from erud.opts.conv2d_v3_same import conv2d_v3_same
 from erud.opts.max_pool import max_pool
 from erud.opts.max_pool_v3 import max_pool_v3
 from erud.opts.flatten import flatten
+from erud.opts.L2_regularization import L2_regularization
 
 from erud.tensor.var import var
 from erud.tensor.rest import rest
@@ -210,6 +211,7 @@ class nous :
         'max_pool' : max_pool,
         'max_pool_v3' : max_pool_v3,
         'flatten' : flatten,
+        'L2_regularization': L2_regularization,
 
         'cross_entropy' : cross_entropy,
         'softmax_cross_entropy' : softmax_cross_entropy,

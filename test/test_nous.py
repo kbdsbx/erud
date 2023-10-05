@@ -637,3 +637,18 @@ def test_nous_parse_difficult () :
         '''
     ).parse()
 
+    g = nous(
+        '''
+     X:(211, 2) ->
+
+        matmul W1:he((2, 20), 4):adam(0.01) add b1:(20):adam(0.01) -> relu ->
+        matmul W2:he((20, 3), 40):adam(0.01) add b2:(3):adam(0.01) -> relu ->
+        matmul W3:he((3, 1), 6):adam(0.01) add b3:(1):adam(0.01) -> sigmoid ->
+    
+    cross_entropy Y:(211, 1) -> cost -> add (W1|W2|W3 L2_regularization(0.5)) -> J:$$
+'''
+    ).parse()
+    print(g)
+
+
+

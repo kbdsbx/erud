@@ -8,8 +8,8 @@ else :
 
 class add (payload) :
     # 缓存
-    __x : any
-    __y : any
+    __x : any = None
+    __y : any = None
 
     # 前向传播时，计算z = x + y
     def fprop(self, x, y) -> any:
