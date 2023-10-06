@@ -34,6 +34,87 @@ def test_nous_get_next_el() :
     with test.raises(ParseError) :
         n._getNextEl('''(((([[{{43ss}}]])))''')
 
+def test_nous_get_next_block() :
+    n = nous()
+
+    code = '''
+    X add Y
+    relu'''
+    assert n._getNextBlock(code) == ('X add Y', 'relu')
+    code = '''X add Y -> relu'''
+    assert n._getNextBlock(code) == ('X add Y -> relu', '')
+    code = '''
+    X add Y ( matmul Z )
+    relu
+'''
+    assert n._getNextBlock(code) == ('X add Y ( matmul Z )', 'relu')
+    code = '''
+    X add Y ( matmul Z ) ->
+    relu
+'''
+    assert n._getNextBlock(code) == ('X add Y ( matmul Z ) ->     relu', '')
+    code = '''
+    X add Y => loop t = 1 to 5 (
+        A matmul B + C
+    ) => join
+    # next
+    '''
+    assert n._getNextBlock(code) == ('''X add Y => loop t = 1 to 5 (
+        A matmul B + C
+    ) => join''', '# next')
+    code = '''
+    X add Y => loop t = 1 to 5 (((
+        A matmul B + C
+    )) => join
+    # next
+    '''
+    # 错误的表达式无法解析，右侧少一个小括号
+    with test.raises(ParseError) :
+        n._getNextBlock(code)
+    
+    code = '''
+    X add Y => loop t = 1 to 5 ((
+        A matmul B + C
+    ))) => join
+    # next
+    '''
+    # 错误的表达式无法解析，左侧少一个小括号
+    with test.raises(IndexError) :
+        n._getNextBlock(code)
+    
+    code = '''
+    # aserlkjfjkk
+    X add Y
+'''
+    assert n._getNextBlock(code) == ('X add Y', '')
+    code = '''     
+
+
+
+    X add Y
+    relu ->
+'''
+    assert n._getNextBlock(code) == ('X add Y', 'relu ->')
+
+    code = '''
+    X:(211, 2) ->
+
+        matmul W1:he((2, 20), 4) add b1:(20) -> relu ->
+        matmul W2:he((20, 3), 40) add b2:(3) -> relu ->
+        matmul W3:he((3, 1), 6) add b3:(1) -> sigmoid ->
+
+    cross_entropy Y:(211, 1) -> cost as entropy_cost
+
+    # L2 正则
+
+    (1.0 div 2) mul (lambd:0.1 div 2) mul ((W1 mul W1 -> sum) add (W2 mul W2 -> sum) add (W3 mul W3 -> sum)) as l2_reg_cost
+
+    entropy_cost add l2_reg_cost -> J:$$
+'''
+    assert n._getNextBlock(code) == ('''X:(211, 2) ->          matmul W1:he((2, 20), 4) add b1:(20) -> relu ->         matmul W2:he((20, 3), 40) add b2:(3) -> relu ->         matmul W3:he((3, 1), 6) add b3:(1) -> sigmoid ->      cross_entropy Y:(211, 1) -> cost as entropy_cost''', '# L2 正则\n\n    (1.0 div 2) mul (lambd:0.1 div 2) mul ((W1 mul W1 -> sum) add (W2 mul W2 -> sum) add (W3 mul W3 -> sum)) as l2_reg_cost\n\n    entropy_cost add l2_reg_cost -> J:$$')
+
+
+
 
 def test_nous_is_block() :
     n = nous()
@@ -648,7 +729,7 @@ def test_nous_parse_difficult () :
     cross_entropy Y:(211, 1) -> cost -> add (W1|W2|W3 L2_regularization(0.5)) -> J:$$
 '''
     ).parse()
-    print(g)
+    # print(g)
 
 
 

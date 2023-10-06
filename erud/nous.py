@@ -333,6 +333,8 @@ class nous :
         stacks = []
         str = str.strip()
         i = 0
+        # 上一个字符
+        sprev = ''
         for s in str :
             if s in " \n\t\v\f" :
                 if 0 == len(stacks) :
@@ -341,14 +343,15 @@ class nous :
                     rest_str = str[i+1:]
                     break
             # 如果有括号则进栈
-            if s in "[({" :
+            if s in "[({<":
                 stacks.append(s)
-            # 如果遇到另一半括号则出栈，验证括号是否匹配，不匹配则抛出异常
-            if s in "])}" :
+            # 如果遇到另一半括号，且括号不是操作符的组成部分（->和=>），则出栈，验证括号是否匹配，不匹配则抛出异常
+            if s in "])}>" and sprev not in '-=' :
                 p = stacks.pop()
-                if ('[' == p and ']' != s) or ('(' == p and ')' != s) or ('{' == p and '}' != s) :
-                    hope = {'[' : ']', '{' : '}', '(' : ')'}[p]
+                if ('[' == p and ']' != s) or ('(' == p and ')' != s) or ('{' == p and '}' != s or ('<' == p and '>' != s)) :
+                    hope = {'[' : ']', '{' : '}', '(' : ')', '<' : '>'}[p]
                     raise ParseError('Parsing code error, can not find "%s" to match "%s".' % (hope, p))
+            sprev = s
             i += 1
         # 如果整体元素是一体的则一整块都是元素
         else :
@@ -825,6 +828,11 @@ class nous :
         # 操作符
         opt : node = None
 
+        # 源点
+        first : node = None
+        # 汇点
+        last : node = None
+
         rest_str = line
         el, rest_str = self._getNextEl(rest_str)
         
@@ -834,19 +842,21 @@ class nous :
         # 3. opt 此为一元操作符，左操作数由上一层给出
         # 4. X opt1 Y opt2 Z 此时构建树状结构图
         # 5. (X opt1 Y) opt2 Z 此时子块递归
+        # 6. X1|X2|X3 opt X4 此为多元操作符，操作符需要两个以上（不包括两个）时需要使用"|"分割操作数
         while el :
             # 如果元素是子块，满足结构5
             if self._isBlock(el) :
                 # 递归调用块处理逻辑来处理子块
                 if left is None :
-                    left = self._processBlock(el, g)
+                    left, _ = self._processSection(el, g)
+                    first = left
                 
                 # 左操作数和子块并列，中间没有操作符
                 elif opt is None :
                     raise ParseError('Can not arrange two of both variable (%s, %s) and block in one place.' % (left.code, el))
 
                 elif right is None :
-                    right = self._processBlock(el, g)
+                    right, _ = self._processSection(el, g)
 
                 # 右操作数和子块并列，中间没有操作符
                 else :
@@ -904,6 +914,7 @@ class nous :
             elif self._isReference(el, g) :
                 if left is None :
                     left = self._getReference(el, g)
+                    first = left
                 # 引用只能为操作数
                 elif opt is None :
                     raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
@@ -911,9 +922,11 @@ class nous :
                     right = self._getReference(el, g)
 
             # 判断是否是合法变量组
+            # 如果是变量组，则满足表达式6
             elif self._isVariableArray(el, g) :
                 if left is None :
                     left = self._makeVariableArray(el, g)
+                    first = left
                     # 将所有左操作数加入图
                     for l in left :
                         if not g.hasNode(l) :
@@ -932,6 +945,7 @@ class nous :
             elif self._isVariable(el) :
                 if left is None :
                     left = self._makeVariable(el)
+                    first = left
                     # 将首个左操作数加入图，后续的所有左操作数都是上一层操作符，是已经加入图的节点
                     g.insertNode(left)
                 # 两个变量并排出现
@@ -1026,11 +1040,90 @@ class nous :
                 # if not g.hasNode(right) :
                 #     g.insertNode(right)
                 # g.addEdge(right, opt)
-            left = opt
+            last = opt
         
-        return left
-        
+        return last, first
+    
+    # 获取下一个块
+    def _getNextBlock(self, str:str) :
+        stacks = []
+        str = str.strip()
+        i = 0
+        # 注释标记
+        comment = 0
+        # 要返回的块
+        block = ""
+        for s in str :
+            # 如果发现注释标记，则不记录后面的所有字符，直到遇到'\n'
+            if s in "#" :
+                comment = 1
+                continue
+            # 默认的块分割符为换行
+            elif s in "\n" :
+                if comment == 1:
+                    comment = 0
+                    continue
+                # 如果换行时处于括号内，则视为子块语句，不处理，否则当做块分割
+                if 0 == len(stacks) :
+                    # 如果行以层连接符结束，则表示此块未结束
+                    if block.strip().endswith(tuple(self.__layer_keywords)) :
+                        block = block + ' '
+                        i += 1
+                        continue
+                    else :
+                        rest_str = str[i+1:]
+                        break
+            elif s in "(" and comment == 0 :
+                stacks.append(s)
+            elif s in ")" and comment == 0 :
+                p = stacks.pop()
+                if '(' == p and ')' != s :
+                    raise ParseError('Parsing code error, can not find ")" to match "(".')
+            if comment == 0 :
+                block = block + s
 
+            i += 1
+        # 表示传入的字符串是一个块
+        else :
+            block = block.strip()
+            rest_str = ""
+            # 只去掉一层括号
+            if block.startswith('(') and block.endswith(')') :
+                block = block[1:-1]
+        
+        # 如果所有字符处理完成，栈里依然有括号，则说明表达式尾部缺少对应结束括号
+        if 0 != len(stacks) :
+            raise ParseError('Parsing code error, can not find ")" to match "(".')
+        
+        block = block.strip()
+        rest_str = rest_str.strip()
+        
+        return block, rest_str
+        
+    # 处理代码段落
+    # 1. 如果换行不在括号里，则将换行符作为块的分割依据
+    # 2. 如果换行在括号里，则当成一整块不处理
+    # 3. 处理空行
+    # 4. 处理注释
+    # 5. 块内处理交给_processBlock
+    def _processSection(self, section: str, g: graph) :
+        # 代码段生成的源点
+        sources = []
+        # 代码段生成的汇点
+        focus = []
+
+        rest_str = section
+        block, rest_str = self._getNextBlock(rest_str)
+
+        while block:
+            foc, sou = self._processBlock(block, g)
+            sources.append(sou)
+            focus.append(foc)
+            block, rest_str = self._getNextBlock(rest_str)
+
+        return focus, sources
+
+      
     # 解析代码
     def parse(self, code : str = None) :
         """
@@ -1046,26 +1139,28 @@ class nous :
             self.__code = code
         self.__g = graph()
 
-        lines = self.__code.split("\n")
+        self._processSection(self.__code, self.__g)
 
-        block = ''
-        for b in lines :
-            b = b.strip()
+        # lines = self.__code.split("\n")
 
-            # 空行跳过
-            if b == '' :
-                continue
+        # block = ''
+        # for b in lines :
+        #     b = b.strip()
 
-            # 以#开头的是注释
-            if b.startswith('#') :
-                continue
+        #     # 空行跳过
+        #     if b == '' :
+        #         continue
 
-            block += ' ' + b
+        #     # 以#开头的是注释
+        #     if b.startswith('#') :
+        #         continue
 
-            # 以层连接符结尾的视为块内换行
-            if not ( b.endswith(tuple(self.__layer_keywords)) ) :
-                self._processBlock(block, self.__g)
-                block = ''
+        #     block += ' ' + b
+
+        #     # 以层连接符结尾的视为块内换行
+        #     if not ( b.endswith(tuple(self.__layer_keywords)) ) :
+        #         self._processBlock(block, self.__g)
+        #         block = ''
         
         return self.g
 
