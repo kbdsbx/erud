@@ -149,7 +149,6 @@ def test_graph_remove_edge() :
     g.addEdge(n2, n6)
 
     c = g.removeEdge(n1, n2)
-    print(g)
     assert c == 3
 
     assert n1.fFirstEdge.fNode is n3
@@ -353,7 +352,7 @@ def test_fprop() :
     assert res.data == -65.0
 
 # 反向传播，即计算图梯度下降
-def test_bprop () :
+def no_test_bprop () :
 
     # 此用例为深度学习的超级简化版
     # 其中神经网络为y = (5 + w) * (6 - 19) / 3

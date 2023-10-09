@@ -506,7 +506,6 @@ def test_make_variable_array() :
     g = n.parse()
 
     nds = n._makeVariableArray('W1|W2', g)
-    print(nds)
     assert len(nds) == 2
     assert nds[0].data.name == 'W1'
     assert nds[1].data.name == 'W2'
@@ -732,4 +731,93 @@ def test_nous_parse_difficult () :
     # print(g)
 
 
+def test_compute_expr() :
+    n = nous()
 
+    assert n._computeExpr('<t + 1 - n>', 't', 1) == '<1 + 1 - n>'
+    assert n._computeExpr('<tt + 1 - t>', 't', 1) == '<tt + 1 - 1>'
+    assert n._computeExpr('<tt + 1 - t>', 'tt', 1) == '<1 + 1 - t>'
+    assert n._computeExpr('<tt *6 - (5 + n)>', 'n', 99) == '<tt *6 - (5 + 99)>'
+    assert n._computeExpr('<8 *6 - (5 + n)>', 'n', 4) == 39
+    assert n._computeExpr('<8*6-(5+\nn)>', 'n', 4) == 39
+    assert n._computeExpr('<t011 + _1 - 3422>', 'tt', 1) == '<t011 + _1 - 3422>'
+    assert n._computeExpr('<t011 + _1 - 3422>', 't011', 996) == '<996 + _1 - 3422>'
+    assert n._computeExpr('<s>', 's', 1) == 1
+
+def test_replace_and_try_compute() :
+    n = nous()
+
+    assert n._replaceAndTryCompute('X<t + 1 - n> add W<t - 1>', 't', 1) == 'X<1 + 1 - n> add W0'
+    assert n._replaceAndTryCompute('loop t = <s> to g', 's', 1) == 'loop t = 1 to g'
+    assert n._replaceAndTryCompute('X<t> hstack A<t-1> -> matmul Wa add ba -> tanh -> A<t>', 't', 3) == 'X3 hstack A2 -> matmul Wa add ba -> tanh -> A3'
+    assert n._replaceAndTryCompute('X<t0 + t1> hstack A<t0-1> -> matmul Wa add ba -> tanh -> A<t1>', 't0', 2) == 'X<2 + t1> hstack A1 -> matmul Wa add ba -> tanh -> A<t1>'
+
+
+def test_process_loop() :
+    n = nous()
+
+    code_old = '''
+loop t = 1 to 5 (
+    X<t> hstack A<t-1> -> matmul Wa add Wb -> tanh -> A<t> ->
+    matmul Wy add by -> sigmoid -> Yhat<t>
+)
+'''
+    code_new = '''(X1 hstack A0 -> matmul Wa add Wb -> tanh -> A1 ->
+    matmul Wy add by -> sigmoid -> Yhat1
+X2 hstack A1 -> matmul Wa add Wb -> tanh -> A2 ->
+    matmul Wy add by -> sigmoid -> Yhat2
+X3 hstack A2 -> matmul Wa add Wb -> tanh -> A3 ->
+    matmul Wy add by -> sigmoid -> Yhat3
+X4 hstack A3 -> matmul Wa add Wb -> tanh -> A4 ->
+    matmul Wy add by -> sigmoid -> Yhat4
+X5 hstack A4 -> matmul Wa add Wb -> tanh -> A5 ->
+    matmul Wy add by -> sigmoid -> Yhat5
+) '''
+    assert n._processLoop(code_old) == code_new
+
+    code_old = '''
+loop t = 1 to 3 (
+    loop s = <t> to 4 (
+        X<t><s> matmul A<t + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -t +s + 1>
+    )
+) gather -> Yhat -> sigmoid_cross_entropy -> cost -> J:$$
+'''
+    code_new = '''(
+    loop s = 1 to 4 (
+        X1<s> matmul A<1 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -1 +s + 1>
+    )
+
+
+    loop s = 2 to 4 (
+        X2<s> matmul A<2 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -2 +s + 1>
+    )
+
+
+    loop s = 3 to 4 (
+        X3<s> matmul A<3 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -3 +s + 1>
+    )
+
+) gather -> Yhat -> sigmoid_cross_entropy -> cost -> J:$$'''
+    assert n._processLoop(code_old) == code_new
+
+
+def test_generate_multiple_link() :
+    code = '''
+    X -> 
+        (
+            (
+                x1 matmul W1 add b1
+                x2 matmul W2 add b2
+                x3 matmul W3 add b3
+            )
+            (
+                x4 matmul W4 add b4
+                x5 matmul W5 add b5
+            )
+            (
+                x6 matmul W6 add b6
+            )
+        ) -> cost
+'''
+    g = nous(code).parse()
+    print(g)

@@ -227,12 +227,19 @@ class nous :
         'as',
         'then',
         '->',
-        'rest'
+        'loop',
+        'rest',
         '$$'
     ]
 
-    # 层连接关键词
-    __layer_keywords = [
+    # 循环关键词
+    __loop_keywords = [
+        'loop',
+        '@@'
+    ]
+
+    # 连接关键词
+    __link_keywords = [
         'then',
         '->'
     ]
@@ -288,8 +295,8 @@ class nous :
         return el
 
 
+    # 连接两个节点，无论节点是单个节点还是节点数组
     # 如果节点不在图里，则插入节点
-    # 连接两个节点，无论节点时单个节点还是节点数组
     def _link(self, left, right, g:graph) :
         leftArr = []
         rightArr = []
@@ -313,10 +320,13 @@ class nous :
                 g.insertNode(right)
             rightArr = [right]
         
+        leftArr = np.array(leftArr).flatten().tolist()
+        rightArr = np.array(rightArr).flatten().tolist()
+        
+        # 一个或多个左节点和一个或多个右节点进行交叉映射，类似于全连接
         for l in leftArr :
             for r in rightArr :
                 g.addEdge(l, r)
-
     
     # 从代码块中获得下一个元素
     # str : str 代码块
@@ -980,9 +990,15 @@ class nous :
                 # 给操作符命名
                 self._setOperatorName(opt, el)
                 # opt.data.name = el
+            
+
+            # 如果遇到loop语句，则交由loop处理程序循环展开源码，而不是按某种语法处理，随后将处理好的源码重新投入块解析器
+            elif el in self.__loop_keywords :
+                rest_str = self._processLoop(el + ' ' + rest_str)
+
 
             # 层连接符
-            elif el in self.__layer_keywords :
+            elif el in self.__link_keywords :
                 # 层连接符不能放在表达式首部
                 if left is None :
                     raise ParseError('Liner "%s" before all of statements is mistake.' % (el))
@@ -1066,7 +1082,7 @@ class nous :
                 # 如果换行时处于括号内，则视为子块语句，不处理，否则当做块分割
                 if 0 == len(stacks) :
                     # 如果行以层连接符结束，则表示此块未结束
-                    if block.strip().endswith(tuple(self.__layer_keywords)) :
+                    if block.strip().endswith(tuple(self.__link_keywords)) :
                         block = block + ' '
                         i += 1
                         continue
@@ -1121,8 +1137,119 @@ class nous :
             focus.append(foc)
             block, rest_str = self._getNextBlock(rest_str)
 
+        # todo 收集完所有子图的源点和汇点后，对每个源点和汇点进行二次检查，后续处理的子图中对先前处理的子图中的点进行连接，导致先前子图中的汇点不再是汇点，找出这些点并排除
+
         return focus, sources
 
+
+    def _processLoop(self, code : str) -> str:
+        code = code.strip()
+        mp = "|".join(self.__loop_keywords)
+        mc = re.compile(r"^(" + mp + r"){1}\s+([a-zA-Z0-9_]+){1}\s*=\s*([0-9]+){1}\s+to\s+([0-9]+){1}")
+        mg = mc.search(code)
+
+        if not mg or mg[1] not in self.__loop_keywords:
+            return code
+        
+        # 从循环语句中提取循环关键词，循环变量，循环起始值，循环结束值
+        # loop t = 1 to 5
+        keyword, variable, idx_from, idx_to = mg[1], mg[2], int(mg[3]), int(mg[4])
+        rest_str = code[len(mg[0]):]
+        loop_range = list(range(idx_from, idx_to + 1))
+
+        el, rest_str = self._getNextEl(rest_str)
+        if not self._isBlock(el) :
+            raise ParseError('Looping keyword "%s" must be set before a block.' % (keyword) )
+        
+        # 剥离括号
+        if el.startswith('(') and el.endswith(')') :
+            el = el[1:-1]
+        new_el = ""
+
+        # 遍历循环变量，计算并替换源码中所有尖括号<>中的值
+        for i in loop_range :
+            cp_el = self._replaceAndTryCompute(el, variable, i)
+            new_el += cp_el + "\n"
+        
+        new_el = "(" + new_el + ")"
+        return new_el + ' ' + rest_str.strip()
+
+    # 将由尖括号`<>`中包裹的代码中的变量`name`替换成对应的值`value`
+    # 如果此尖括号`<>`内的表达式中所有的变量都已经被替换，则尝试计算表达式，用结果替换掉尖括号中的所有内容，并去掉尖括号
+    # `X<a + b + 1>`，当a = 1时，替换为`X<1 + b + 1>`
+    # 当a = 1，b = 3时，替换为`X5`
+    def _replaceAndTryCompute(self, code, vname, vvalue) :
+        start = -1
+        end = -1
+        rvalue = ''
+        replaceAllMatch = []
+        for i in range(len(code)) :
+            if code[i] in '<' :
+                if start == -1:
+                    start = i
+                else :
+                    raise Exception('暂不支持嵌套')
+            elif code[i] in '>' :
+                if start == -1 :
+                    # 没有开始括号，只有结束括号，表示这是一个其他运算符，而不是表达式分隔符
+                    continue
+                if end == -1 :
+                    end = i + 1
+                else :
+                    raise Exception('暂不支持嵌套')
+                rvalue = self._computeExpr(code[start:end], vname, vvalue)
+                # 未防止替换和遍历同时进行出错，将需要替换的值暂存，等完成遍历后再进行替换
+                replaceAllMatch.append([start, end, rvalue])
+
+                start = -1
+                end = -1
+            
+        code_arr = list(code)
+        # 将表达式从后向前依次替换（通过数组替换元素的方式）
+        for repObj in reversed(replaceAllMatch) :
+            code_arr[repObj[0]:repObj[1]] = list(str(repObj[2]))
+        
+        return ''.join(code_arr)
+    
+    def _computeExpr(self, expr, src, des) -> str:
+        # 剥离尖括号，增加结束符
+        expr = expr[1:-1]
+        
+        start = -1
+        end = -1
+        replaceAllMatch = []
+
+        for i in range(len(expr)) :
+            if expr[i] in '+-*/() \n\f\v\r\t' :
+                if start != -1 and end == -1 :
+                    end = i
+                    if expr[start:end] == src :
+                        replaceAllMatch.append([start, end])
+
+                start = -1
+                end = -1
+            else :
+                if start == -1 :
+                    start = i
+        
+        if start != -1 and expr[start:] == src :
+            replaceAllMatch.append([start, None])
+        
+        code_arr = list(expr)
+        for repObj in reversed(replaceAllMatch) :
+            code_arr[repObj[0]:repObj[1]] = list(str(des))
+
+        end_code = ''.join(code_arr)
+
+        # 如果表达式的所有变量都已经替换，则计算表达式并返回值
+        try :
+            return eval(end_code, {}, {})
+        # 如果表达式无法执行，则表示其中有未经替换的变量，则返回
+        except:
+            return '<' + (''.join(code_arr)) + '>'
+            
+        
+        
       
     # 解析代码
     def parse(self, code : str = None) :
@@ -1158,7 +1285,7 @@ class nous :
         #     block += ' ' + b
 
         #     # 以层连接符结尾的视为块内换行
-        #     if not ( b.endswith(tuple(self.__layer_keywords)) ) :
+        #     if not ( b.endswith(tuple(self.__link_keywords)) ) :
         #         self._processBlock(block, self.__g)
         #         block = ''
         
