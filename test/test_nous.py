@@ -563,16 +563,18 @@ def test_process_block() :
     g = graph()
 
     # 左操作数和子块并列，中间没有操作符
-    with test.raises(ParseError) :
-        n._processBlock('X (a add b)', g)
+    # v0.3左操作数可以连接到子块
+    # with test.raises(ParseError) :
+        # n._processBlock('X (a add b)', g)
 
     # 右操作数和子块并列，中间没有操作符
     with test.raises(ParseError) :
         n._processBlock('X add Y (a add b)', g)
 
     # 操作符不能在整个表达式首部
-    with test.raises(ParseError) :
-        n._processBlock('add Y', g)
+    # v0.3 操作符可以在子块首部
+    # with test.raises(ParseError) :
+        # n._processBlock('add Y', g)
 
     # 两个操作符并排出现
     with test.raises(ParseError) :
@@ -806,18 +808,52 @@ def test_generate_multiple_link() :
     X -> 
         (
             (
-                x1 matmul W1 add b1
-                x2 matmul W2 add b2
-                x3 matmul W3 add b3
+                matmul as m1 W1 add as a1 b1
+                matmul as m2 W2 add as a2 b2
+                matmul as m3 W3 add as a3 b3
             )
             (
-                x4 matmul W4 add b4
-                x5 matmul W5 add b5
+                matmul as m4 W4 add as a4 b4
+                matmul as m5 W5 add as a5 b5
             )
             (
-                x6 matmul W6 add b6
+                matmul as m6 W6 add as a6 b6
             )
         ) -> cost
 '''
     g = nous(code).parse()
-    print(g)
+    assert str(g) == '''
+| X |\t[->matmul] [->matmul] [->matmul] [->matmul] [->matmul] [->matmul] 
+| matmul |\t[->add] [<-W1] [<-X] 
+| W1 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b1] 
+| b1 |\t[->add] 
+| matmul |\t[->add] [<-W2] [<-X] 
+| W2 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b2] 
+| b2 |\t[->add] 
+| matmul |\t[->add] [<-W3] [<-X] 
+| W3 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b3] 
+| b3 |\t[->add] 
+| matmul |\t[->add] [<-W4] [<-X] 
+| W4 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b4] 
+| b4 |\t[->add] 
+| matmul |\t[->add] [<-W5] [<-X] 
+| W5 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b5] 
+| b5 |\t[->add] 
+| matmul |\t[->add] [<-W6] [<-X] 
+| W6 |\t[->matmul] 
+| add |\t[->cost] [<-matmul] [<-b6] 
+| b6 |\t[->add] 
+| cost |\t[<-add] [<-add] [<-add] [<-add] [<-add] [<-add] 
+'''
+
+
+def test_flatten_list () :
+    n = nous()
+
+    saved = []
+    assert np.all(n._flatten([[1,2,3], [2,4], [1]], saved) == [1,2,3,2,4,1])

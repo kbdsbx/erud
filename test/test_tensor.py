@@ -11,7 +11,7 @@ def test_variable () :
     v1 = var(5)
 
     assert v1.fprop() == 5
-    assert v1.bprop(7) == [0]
+    assert v1.bprop(7) == [7]
 
     v1.data = 7
 
@@ -23,8 +23,8 @@ def test_variable () :
 
     np.random.seed(2)
     assert np.all(np.equal( v2.fprop(), np.random.randn(3,5,4) ))
-    assert np.all(np.equal( v2.bprop(np.ones((1,2,3))), [np.zeros((3,5,4))]))
-    assert np.all(np.equal( v2.bprop(), [np.zeros((3,5,4))]))
+    assert np.all(np.equal( v2.bprop(np.ones((1,2,3))), [np.ones((1,2,3))]))
+    assert np.all(np.equal( v2.bprop(np.zeros((3,5,4))), [np.zeros((3,5,4))]))
 
     np.random.seed(2)
     assert np.all(np.equal( v2.data, np.random.randn(3,5,4)))

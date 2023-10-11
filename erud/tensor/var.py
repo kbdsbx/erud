@@ -48,10 +48,13 @@ class var (payload) :
     
     # 前向传播时，变量提供值
     # 变量值会向后分发（沿着出度）给所有使用此变量的表达式
-    def fprop(self) -> any:
+    # 如果变量接受一个新的值，那么就用这个新值替换旧值
+    def fprop(self, ndata = None) -> any:
+        if ndata :
+            self.__data = ndata
         return self.__data
 
-    # 反向传播时，dz/dc = 0
+    # 反向传播时，dz不做处理，并传到上一层
     def bprop(self, dz = None) -> list[any]:
         # 反向传播更新参数
         if dz is not None and self.__update_func is not None :
@@ -62,10 +65,11 @@ class var (payload) :
             if res is not None :
                 self.__data = res
 
-        if isinstance(self.__data, np.ndarray) :
-            return [np.zeros_like(self.__data)]
-        else :
-            return [0]
+        return [dz]
+        # if isinstance(self.__data, np.ndarray) :
+        #     return [np.zeros_like(self.__data)]
+        # else :
+        #     return [0]
     
     def __str__ (self) :
         if self.__data is not None :

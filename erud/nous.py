@@ -294,34 +294,37 @@ class nous :
             el = el[1:-1]
         return el
 
+    # 将任意格式的多层数组拉平
+    def _flatten (self, lst, save =[]):
+        if type(lst) is list :
+            for x in lst:
+                if type(x) is list:
+                    self._flatten(x, save)
+                else:
+                    save.append(x)
+        else :
+            save.append(lst)
+        return save
+
+    # 将节点插入图
+    def _insert(self, node, g:graph) :
+        _nodes = []
+        _nodes = self._flatten(node, _nodes)
+
+        if not isinstance(_nodes, list) :
+            _nodes = [_nodes]
+
+        for n in _nodes :
+            if not g.hasNode(n) :
+                g.insertNode(n)
+
+        return _nodes
 
     # 连接两个节点，无论节点是单个节点还是节点数组
     # 如果节点不在图里，则插入节点
     def _link(self, left, right, g:graph) :
-        leftArr = []
-        rightArr = []
-        if isinstance(left, list) :
-            for l in left:
-                if not g.hasNode(l) :
-                    g.insertNode(l)
-            leftArr = left
-        else :
-            if not g.hasNode(left) :
-                g.insertNode(left)
-            leftArr = [left]
-        
-        if isinstance(right, list) :
-            for r in right :
-                if not g.hasNode(r) :
-                    g.insertNode(r)
-            rightArr = right
-        else :
-            if not g.hasNode(right) :
-                g.insertNode(right)
-            rightArr = [right]
-        
-        leftArr = np.array(leftArr).flatten().tolist()
-        rightArr = np.array(rightArr).flatten().tolist()
+        leftArr = self._insert(left, g)
+        rightArr = self._insert(right, g)
         
         # 一个或多个左节点和一个或多个右节点进行交叉映射，类似于全连接
         for l in leftArr :
@@ -405,11 +408,6 @@ class nous :
         # 先判断是否是关键词
         if el in self.__keywords :
             return False
-        
-        # if el in self.__operators.keys() :
-            # return True
-        
-        # return False
 
         mp = "|".join(self.__operators.keys())
         # re.compile(r"^(add|sub|div|mul){0,1}(\((\s*\d+\s*,\s*)*(\s*\d+\s*){1}\))$", re.U)
@@ -644,22 +642,6 @@ class nous :
     
     # 是否是合法变量
     def _isVariable(self, el:str) -> bool:
-        # sp_idx = el.find(":")
-
-        # if -1 == sp_idx :
-        #     if self._isName(el):
-        #         return True
-        #     elif self._isValue(el):
-        #         return True
-        #     else :
-        #         return False
-        # else :
-        #     name_str = el[:sp_idx]
-        #     value_str = el[sp_idx + 1:]
-        #     if self._isName(name_str) and self._isValue(value_str) :
-        #         return True
-        #     else :
-        #         return False
         
         sp_block = el.split(":")
 
@@ -830,6 +812,7 @@ class nous :
     # 处理块逻辑，并返回解析块的计算图的汇点（终点）
     # line : str 代码子串
     # g: 计算图
+    # 返回源点与汇点的数组
     def _processBlock(self, line:str, g:graph) :
         # 左操作数
         left : node = None
@@ -856,32 +839,47 @@ class nous :
         while el :
             # 如果元素是子块，满足结构5
             if self._isBlock(el) :
+                el = el.strip()
+                # 处理子块时，需要去掉外层小括号
+                el = self._stripBrackets(el)
                 # 递归调用块处理逻辑来处理子块
-                if left is None :
-                    left, _ = self._processSection(el, g)
-                    first = left
+                # 子块位于首部，则此块源点是子块的源点
+                if left is None and first is None:
+                    first, left = self._processSection(el, g)
                 
                 # 左操作数和子块并列，中间没有操作符
+                # 考虑`X scatter -> (x0 matmul W1)`，scatter会在->后变为左操作数，然后将值传递给x0，即如果两个变量或操作符与变量相连，那么后者将会接收并存储前者的值
+                # 源点与前节点相连
+                # 返回汇点
                 elif opt is None :
-                    raise ParseError('Can not arrange two of both variable (%s, %s) and block in one place.' % (left.code, el))
+                    opt, _ = self._processSection(el, g)
+                    if left is not None :
+                        self._link(left, opt, g)
+                    left = _
+                    opt = None
+                    right = None
 
+                # ... add (Y1 matmul Z1)
+                # 右操作数，则使用汇点
                 elif right is None :
-                    right, _ = self._processSection(el, g)
+                    _, right = self._processSection(el, g)
 
                 # 右操作数和子块并列，中间没有操作符
                 else :
                     raise ParseError('Can not arrange two of both variable (%s, %s) and block in one place.' % (right.code, el))
 
             # 判断是否是操作符
-            # elif el in self.__options.keys() :
             elif self._isOperator(el) :
                 # 操作符不能在整个表达式首部
-                if left is None :
-                    raise ParseError('Operator "%s" after null variable is mistake.' % (el) )
+                # v0.3 操作符可以在子块首部
+                # X -> ( matmul W1 ) -> 
+                if left is None and first is None:
+                    opt = self._makeOperator(el)
+                    first = opt
+                    # raise ParseError('Operator "%s" after null variable is mistake.' % (el) )
                 
                 elif opt is None :
                     opt = self._makeOperator(el)
-                    # opt = node(self.__options[el]())
                 
                 # 两个操作符并排出现
                 elif right is None :
@@ -889,30 +887,13 @@ class nous :
 
                 # 如果左操作数、右操作数和操作符同时存在，此时又出现一个新的操作符，则满足结构4
                 else : 
-                    g.insertNode(opt)
+                    self._insert(opt, g)
 
-                    # self._insertIfNot(right, g)
-                    # if isinstance(right, list) :
-                    #     for r in right :
-                    #         if not g.hasNode(r) :
-                    #             g.insertNode(r)
-                    # else :
-                    #     if not g.hasNode(right) :
-                    #         g.insertNode(right)
-                    
-                    self._link(left, opt, g)
-                    # if isinstance(left, list) :
-                    #     for l in left :
-                    #         g.addEdge(l, opt)
-                    # else :
-                    #     g.addEdge(left, opt)
-                    
-                    self._link(right, opt, g)
-                    # if isinstance(right, list) :
-                    #     for r in right :
-                    #         g.addEdge(r, opt)
-                    # else :
-                    #     g.addEdge(right, opt)
+                    if left is not None :
+                        self._link(left, opt, g)
+
+                    if right is not None :
+                        self._link(right, opt, g)
                     # 操作符成为下一层的左操作数
                     left = opt
                     opt = self._makeOperator(el)
@@ -922,7 +903,7 @@ class nous :
             # 引用通常来自于已经命名的操作符（通过关键字as）或者已经命名的变量
             # 变量通常在第一次发现时创建，后续使用则为同名引用
             elif self._isReference(el, g) :
-                if left is None :
+                if left is None and first is None:
                     left = self._getReference(el, g)
                     first = left
                 # 引用只能为操作数
@@ -934,13 +915,11 @@ class nous :
             # 判断是否是合法变量组
             # 如果是变量组，则满足表达式6
             elif self._isVariableArray(el, g) :
-                if left is None :
+                if left is None and first is None:
                     left = self._makeVariableArray(el, g)
                     first = left
                     # 将所有左操作数加入图
-                    for l in left :
-                        if not g.hasNode(l) :
-                            g.insertNode(l)
+                    self._insert(left, g)
                 
                 elif opt is None :
                     raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
@@ -953,25 +932,16 @@ class nous :
             
             # 判断是否是合法变量
             elif self._isVariable(el) :
-                if left is None :
+                if left is None and first is None:
                     left = self._makeVariable(el)
                     first = left
                     # 将首个左操作数加入图，后续的所有左操作数都是上一层操作符，是已经加入图的节点
-                    g.insertNode(left)
+                    self._insert(left, g)
                 # 两个变量并排出现
                 elif opt is None :
                     raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (left.code, el))
                 elif right is None :
                     right = self._makeVariable(el)
-                    # 操作符、操作数齐全，生成一层操作
-                    # g.insertNode(opt)
-                    # g.addEdge(left, opt)
-                    # g.insertNode(right)
-                    # g.addEdge(right, opt)
-                    # # 操作符成为下一层的左操作数
-                    # left = opt
-                    # opt = None
-                    # right = None
                 else :
                     raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (right.code, el))
             
@@ -1000,33 +970,21 @@ class nous :
             # 层连接符
             elif el in self.__link_keywords :
                 # 层连接符不能放在表达式首部
-                if left is None :
+                if left is None and first is None:
                     raise ParseError('Liner "%s" before all of statements is mistake.' % (el))
                 
                 # 操作符不为空，则构建此层，此层的操作符成为下一层的左操作数
                 elif opt is not None :
-                    g.insertNode(opt)
+                    # g.insertNode(opt)
+                    self._insert(opt, g)
                     # 如果是多个左操作数，则全部连接到操作符
 
-                    self._link(left, opt, g)
-                    # if isinstance(left, list) :
-                    #     for l in left :
-                    #         g.addEdge(l, opt)
-                    # else :
-                    #     g.addEdge(left, opt)
+                    if left is not None :
+                        self._link(left, opt, g)
 
                     if right is not None:
                         # 如果是多个右操作数，则全部连接到操作符
                         self._link(right, opt, g)
-                        # if isinstance(right, list) :
-                        #     for r in right :
-                        #         if not g.hasNode(r) :
-                        #             g.insertNode(r)
-                        #         g.addEdge(r, opt)
-                        # else :
-                        #     if not g.hasNode(right) :
-                        #         g.insertNode(right)
-                        #     g.addEdge(right, opt)
 
                     left = opt
                     opt = None
@@ -1035,7 +993,7 @@ class nous :
             # 终止符（结果变量）
             elif self._isRest(el) :
                 # 休止符（结果变量）不能放在表达式首部
-                if left is None :
+                if left is None and first is None:
                     raise ParseError('REST arranged before all of statements is mistake.')
                 
                 else :
@@ -1048,17 +1006,17 @@ class nous :
 
         # 对还未加入图的节点进行收尾，并返回汇点
         if opt is not None :
-            self._link(left, opt, g)
-            # g.insertNode(opt)
-            # g.addEdge(left, opt)
+            if left is not None :
+                self._link(left, opt, g)
+
             if right is not None :
                 self._link(right, opt, g)
-                # if not g.hasNode(right) :
-                #     g.insertNode(right)
-                # g.addEdge(right, opt)
+
             last = opt
+        else :
+            last = left
         
-        return last, first
+        return first, last
     
     # 获取下一个块
     def _getNextBlock(self, str:str) :
@@ -1099,7 +1057,7 @@ class nous :
                 block = block + s
 
             i += 1
-        # 表示传入的字符串是一个块
+        # 表示传的全部字符串是一个块
         else :
             block = block.strip()
             rest_str = ""
@@ -1132,14 +1090,15 @@ class nous :
         block, rest_str = self._getNextBlock(rest_str)
 
         while block:
-            foc, sou = self._processBlock(block, g)
+            sou, foc = self._processBlock(block, g)
             sources.append(sou)
             focus.append(foc)
             block, rest_str = self._getNextBlock(rest_str)
+        
 
         # todo 收集完所有子图的源点和汇点后，对每个源点和汇点进行二次检查，后续处理的子图中对先前处理的子图中的点进行连接，导致先前子图中的汇点不再是汇点，找出这些点并排除
 
-        return focus, sources
+        return sources, focus
 
 
     def _processLoop(self, code : str) -> str:
@@ -1267,27 +1226,6 @@ class nous :
         self.__g = graph()
 
         self._processSection(self.__code, self.__g)
-
-        # lines = self.__code.split("\n")
-
-        # block = ''
-        # for b in lines :
-        #     b = b.strip()
-
-        #     # 空行跳过
-        #     if b == '' :
-        #         continue
-
-        #     # 以#开头的是注释
-        #     if b.startswith('#') :
-        #         continue
-
-        #     block += ' ' + b
-
-        #     # 以层连接符结尾的视为块内换行
-        #     if not ( b.endswith(tuple(self.__link_keywords)) ) :
-        #         self._processBlock(block, self.__g)
-        #         block = ''
         
         return self.g
 
