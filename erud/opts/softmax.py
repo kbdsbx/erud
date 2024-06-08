@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class softmax(payload) :
     __a : any
@@ -50,7 +49,7 @@ class softmax(payload) :
         _a = self.__a
         _axises = self.__axises
         # dx = _a * (dz - np.einsum('ij,ij->i', dz, _a, optimize = True) )
-        dx = _a * (dz - np.sum(dz * _a, axis = _axises) )
+        dx = _a * (dz - np.sum(dz * _a, axis = _axises, keepdims=True) )
 
         daxies = 0
         if isinstance(_axises, list) :

@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 # 总代价函数
 class cost (payload) :

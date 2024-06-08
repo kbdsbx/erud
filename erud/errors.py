@@ -13,6 +13,9 @@ class EdgeRepeatError (Exception ) : ...
 # 重复添加节点
 class NodeRepeatError (Exception) : ...
 
+# 错误的传播方法
+class PropError (Exception) : ...
+
 
 ####### nous语言表达式异常 ######
 

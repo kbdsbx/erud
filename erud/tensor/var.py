@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 from erud.upf.updateable import updateable
 from erud.upf.norm import norm
 from erud.upf.momentum import momentum 
@@ -13,6 +12,7 @@ from inspect import isfunction
 class var (payload) :
     __data : any = None
     __update_func : updateable = None
+    __gradient_clip : float = 0
         
     __update_func_list = {
         'norm' : norm,
@@ -29,6 +29,15 @@ class var (payload) :
     @data.setter
     def data(self, d) :
         self.__data = d
+    
+    # 梯度裁剪
+    @property
+    def gradient_clip(self) -> float :
+        return self.__gradient_clip
+    
+    @gradient_clip.setter
+    def gradient_clip(self, d) :
+        self.__gradient_clip = d
     
     # 更新函数
     # 是否拥有更新函数通常被用来判断节点是否是常量
@@ -50,21 +59,30 @@ class var (payload) :
     # 变量值会向后分发（沿着出度）给所有使用此变量的表达式
     # 如果变量接受一个新的值，那么就用这个新值替换旧值
     def fprop(self, ndata = None) -> any:
-        if ndata :
+        if ndata is not None :
             self.__data = ndata
         return self.__data
 
     # 反向传播时，dz不做处理，并传到上一层
     def bprop(self, dz = None) -> list[any]:
-        # 反向传播更新参数
-        if dz is not None and self.__update_func is not None :
-            if isinstance(self.__update_func, updateable) :
-                res = self.__update_func.updateFunc(self.__data, dz)
-            if isfunction(self.__update_func) :
-                res = self.__update_func(self.__data, dz)
-            if res is not None :
-                self.__data = res
 
+        # 反向传播更新参数
+        if dz is not None :
+            if self.__update_func is not None :
+                if isinstance(self.__update_func, updateable) :
+                    res = self.__update_func.updateFunc(self.__data, dz)
+                elif isfunction(self.__update_func) :
+                    res = self.__update_func(self.__data, dz)
+
+                # 如果梯度裁剪有值，则进行裁剪
+                if self.gradient_clip != 0. :
+                    res = np.clip(res, -self.gradient_clip, self.gradient_clip)
+                
+                if res is not None :
+                    self.__data = res
+        else :
+            dz = np.ones_like(self.__data)
+        
         return [dz]
         # if isinstance(self.__data, np.ndarray) :
         #     return [np.zeros_like(self.__data)]

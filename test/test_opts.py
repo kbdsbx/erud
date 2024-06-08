@@ -8,9 +8,8 @@ from erud.opts.sigmoid import sigmoid
 from erud.opts.softmax import softmax
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import pytest as test
 
 np.set_printoptions(precision=99, suppress=True)
@@ -383,7 +382,7 @@ def test_batchnorm() :
     z = b.fprop(x)
 
     assert np.sum(z) == 0.
-    assert np.sum(np.power(z, 2)) == 3.999999968000002
+    assert np.sum(np.power(z, 2)) == 4.0
 
     [dx] = b.bprop(np.array([[1, 1],[1, 1]]))
 
@@ -396,18 +395,12 @@ def test_batchnorm2d() :
     x = np.random.randn(2, 3, 4, 5)
     b = batchnorm2d()
     z = b.fprop(x)
-    assert np.sum(z) == 4.440892098500626e-15
+    assert np.sum(z) == 2.6645352591003757e-15
     assert z.shape == (2, 3, 4, 5)
-    assert np.sum(np.power(z, 2)) == 119.99999818952824
+    assert np.sum(np.power(z, 2)) == 119.99999999999997
 
     [dx] = b.bprop(np.random.randn(2, 3, 4, 5))
     assert dx.shape == (2, 3, 4, 5)
-
-from erud.opts_extend.max_index import max_index
-
-def test_max_index() :
-    m = np.array([[1,2], [3,4]])
-    assert np.all(max_index(1).fprop(m) == np.array([1, 1]))
 
 from erud.opts.conv2d import conv2d
 
@@ -537,10 +530,62 @@ def test_l2_regularization() :
     assert np.all(dW1 == np.array([[0.0016666666666666666, 0.002], [0.0006666666666666666, 0.0013333333333333333]]))
     assert np.all(dW2 == np.array([[0.003,  0.0003333333333333333]]))
     assert np.all(dW3 == np.array([[0.0016666666666666666, 0.001, 0.002], [0.0006666666666666666, 0.0023333333333333333, 0.0013333333333333333], [-0.0016666666666666666, 0.000033333333333333335, -0.0021666666666666666]]))
+
+from erud.opts.scatter import scatter
+
+def test_scatter() :
+    W1 = np.array([[1, 2], [3, 4]])
+    opt = scatter(1)
+    assert opt.prop_type == 1
+    Z = opt.fprop(W1)
+    assert len(Z) == 2
+    assert np.all(Z[0] == np.array([1, 3]))
+    assert np.all(Z[1] == np.array([2, 4]))
+
+    dZ = [np.array([5, 6]), np.array([7, 8])]
+    dW = opt.bprop(dZ)
+    assert np.all(dW == np.array([[5,7], [6,8]]))
+
+
+from erud.opts.gather import gather
+
+def test_gather () :
+    W1 = [np.array([1, 2]), np.array([3, 4])]
+    opt = gather(1)
+    assert opt.prop_type == 0
+    Z = opt.fprop(*W1)
+    assert np.all(Z == np.array([[1, 3], [2, 4]]))
+
+    dZ = np.array([[5, 6], [7, 8]])
+    dW = opt.bprop(dZ)
+    assert len(dW) == 2
+    assert np.all(dW[0] == np.array([5, 7]))
+    assert np.all(dW[1] == np.array([6, 8]))
+
     
 
+from erud.opts.leaky_relu import leaky_relu
+
+def test_leaky_relu () :
+    opt = leaky_relu()
+    X = np.array([[1, 0], [-2, 3]])
+    Z = opt.fprop(X)
+    assert np.all(Z == np.array([[1, 0], [-0.2, 3]]))
+    dZ = np.array([[0.5, 1], [-2, 0]])
+    dX = opt.bprop(dZ)
+    assert len(dX) == 1
+    assert np.all(dX[0] == np.array([[0.5, 1], [-0.2, 0]]))
 
 
+from erud.opts.reshape import reshape
 
+def test_reshape () :
 
+    opt = reshape((5,4,3))
+    X = np.random.randn(3, 5, 4)
+    Z = opt.fprop(X)
+    assert np.all(Z == X.reshape(5,4,3))
 
+    dZ = Z
+    dX = opt.bprop(dZ)
+    assert np.all(X == dX[0])

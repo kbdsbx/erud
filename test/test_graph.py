@@ -3,9 +3,8 @@ from erud.cg.node import ComputationNode as node
 from erud.errors import *
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import random
 from erud.nous import nous
 
@@ -484,3 +483,99 @@ def test_set_data () :
 
     assert res.data == 144
     assert g.getData('J') == 144
+
+def test_prop_type () :
+    g = nous(
+        '''
+        X scatter(1) -> (
+            => x1
+            => x2
+            => x3
+        )
+'''
+    ).parse()
+
+    g.setData('X', np.array([[1, 2, 3], [4, 5, 6]]))
+    g.fprop()
+    assert np.all(g.getData('x1') == np.array([1, 4]))
+    assert np.all(g.getData('x2') == np.array([2, 5]))
+    assert np.all(g.getData('x3') == np.array([3, 6]))
+    g = nous(
+        '''
+        X scatter(0) -> (
+            => x1
+            => x2
+        )
+'''
+    ).parse()
+    g.setData('X', np.array([[1, 2, 3], [4, 5, 6]]))
+    g.fprop()
+    assert np.all(g.getData('x1') == np.array([1, 2, 3]))
+    assert np.all(g.getData('x2') == np.array([4, 5, 6]))
+
+    g = nous(
+        '''
+        X scatter(0) -> loop t = 1 to 2 (
+            => x<t> add <t>
+        ) -> gather(0) => y
+'''
+    ).parse()
+    g.setData('X', np.array([[1, 2, 3], [4, 5, 6]]))
+    g.fprop()
+    assert np.all(g.getData('y') == np.array([[2, 3, 4], [6, 7, 8]]))
+
+    g = nous(
+        '''
+        X scatter(0) -> loop t = 1 to 2 (
+            => x<t> add <t>
+        ) -> gather(0) => y
+'''
+    ).parse()
+    g.setData('X', np.array([[1,2,3]]))
+    with pytest.raises(IndexError) :
+        g.fprop()
+    
+
+    g = nous(
+        '''
+        X scatter(0) -> loop t = 1 to 2 (
+            => x<t> add <t>
+        ) -> gather(0) => y
+'''
+    ).parse()
+    g.setData('X', np.array([[1,2,3], [4,5,6], [7,8,9]]))
+    with pytest.raises(PropError) :
+        g.fprop()
+    
+
+    g = nous(
+        '''
+        X scatter(0) -> loop t = 1 to 2 (
+            => x<t> mul <t>
+        ) -> gather(0) => y
+'''
+    ).parse()
+    g.setData('X', np.array([[1, 2, 3], [4, 5, 6]]))
+    def _updatef (z, dz) :
+        assert np.all(dz == np.array([[1, 1, 1], [ 2, 2, 2]]))
+    g.setUpdateFunc('X', _updatef)
+    g.fprop()
+    assert np.all(g.getData('y') == np.array([[1, 2, 3], [8, 10, 12]]))
+    g.bprop()
+
+def no_test_graph_show() :
+    g = nous(
+    '''
+    X:(1, 27, 27) scatter(1) -> loop t = 1 to 10 (
+        x<t - 1> matmul Wax:xavier(27, 50):adam(0.001) ->
+        add (a<t - 1>:(1, 50) matmul Waa:xavier(50, 50):adam(0.001)) ->
+        add ba:(50):adam(0.001) ->
+        tanh => a<t> ->
+        matmul Wya:xavier(50, 27):adam(0.001) add by:(27):adam(0.001) -> softmax(1)
+    ) -> gather(1) ->
+
+    cross_entropy Y:(1, 27, 27) -> cost -> J:$$
+'''
+    ).parse()
+    print(g)
+    # g.show()

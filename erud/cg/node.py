@@ -80,10 +80,16 @@ class ComputationNode :
         self.__code = code
 
     def __str__(self) :
-        if self.__data == None :
-            return ""
+        if self.__data or self.__data.name :
+            return str(self.__data.name)
         else :
-            return self.__data
+            return str(self.code)
+    
+    def __repr__(self) :
+        if self.__data or self.__data.name :
+            return str(self.__data.name)
+        else :
+            return str(self.code)
     
     def exports(self) -> object :
         obj = {

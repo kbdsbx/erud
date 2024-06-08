@@ -2,9 +2,8 @@ from erud.cg.payload import payload
 from erud.c_extend.max_pool import max_pool_fprop, max_pool_bprop
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class max_pool_v3(payload) :
 

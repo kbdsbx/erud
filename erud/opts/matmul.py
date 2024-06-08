@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class matmul (payload) :
     # 缓存
@@ -12,6 +11,10 @@ class matmul (payload) :
 
     # 前向传播
     def fprop(self, x : np.ndarray, y : np.ndarray) -> np.ndarray:
+        if self.name :
+            print(self.name)
+            print(x.shape)
+            print(y.shape)
         self.__x = x
         self.__y = y
 
@@ -21,7 +24,7 @@ class matmul (payload) :
     def bprop(self, dz) -> list[np.ndarray] :
         _x = self.__x
         _y = self.__y
-
+        
         _y_temp_axis = [i for i in range(len(_y.shape))]
         if len(_y.shape) == 1 :
             _y_temp_axis = tuple([1, 0])
@@ -33,9 +36,15 @@ class matmul (payload) :
             _y_temp = _y
         
         # 按照矩阵后两个维度转置
-        _y_temp = _y_temp.transpose(*_y_temp_axis)
+        if useGPU :
+            _y_temp = cp.transpose(_y_temp, _y_temp_axis)
+        else :
+            _y_temp = np.transpose(_y_temp, _y_temp_axis)
 
-        dx = np.matmul(dz, _y_temp)
+        if useGPU :
+            dx = cp.matmul(dz, _y_temp)
+        else :
+            dx = np.matmul(dz, _y_temp)
         dx = dx.reshape(_x.shape)
 
         _x_temp_axis = [i for i in range(len(_x.shape))]
@@ -48,9 +57,15 @@ class matmul (payload) :
             _x_temp_axis[-2] = t
             _x_temp = _x
         
-        _x_temp = _x_temp.transpose(*_x_temp_axis)
+        if useGPU :
+            _x_temp = cp.transpose(_x_temp, _x_temp_axis)
+        else :
+            _x_temp = np.transpose(_x_temp, _x_temp_axis)
 
-        dy = np.matmul(_x_temp, dz)
+        if useGPU :
+            dy = cp.matmul(_x_temp, dz)
+        else :
+            dy = np.matmul(_x_temp, dz)
         dy = dy.reshape(_y.shape)
 
         return [dx, dy]

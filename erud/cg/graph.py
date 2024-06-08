@@ -1,8 +1,8 @@
 from erud.cg.edge import ComputationEdge as edge
 from erud.cg.node import ComputationNode as node
 from erud.errors import *
-import json
-import os
+from graphviz import Digraph
+from prettytable import PrettyTable as ptable
 
 # 计算图
 # 使用十字链表存储
@@ -405,23 +405,53 @@ class ComputationGraph:
 
         while len(s_node) :
             for n in s_node :
-                args = []
-                # 从此节点的入边中取得所有运载
-                p = n.bFirstEdge
-                while p is not None :
-                    args.append(p.carry)
-                    # 取得运载后将运载清空，方便后续计算
-                    p.carry = None
-                    p = p.bNextEdge
+                # 分发
+                if n.data.prop_type == 0 :
+                    args = []
+                    # 从此节点的入边中取得所有运载
+                    p = n.bFirstEdge
+                    while p is not None :
+                        args.append(p.carry)
+                        # 取得运载后将运载清空，方便后续计算
+                        p.carry = None
+                        p = p.bNextEdge
 
-                # 将运载投入节点负载进行计算
-                res = n.fprop(*args)
+                    # 将运载投入节点负载进行计算
+                    res = n.fprop(*args)
 
-                q = n.fFirstEdge
-                # 将计算结果沿着出边向后传递，即分发赋值给所有出边的运载
-                while q is not None:
-                    q.carry = res
-                    q = q.fNextEdge
+                    q = n.fFirstEdge
+                    # 将计算结果沿着出边向后传递，即分发赋值给所有出边的运载
+                    while q is not None:
+                        q.carry = res
+                        q = q.fNextEdge
+                # 拆分
+                elif n.data.prop_type == 1 :
+                    args = []
+                    # 从此节点的入边中取得所有运载
+                    p = n.bFirstEdge
+                    while p is not None :
+                        args.append(p.carry)
+                        # 取得运载后将运载清空，方便后续计算
+                        p.carry = None
+                        p = p.bNextEdge
+
+                    # 将运载投入节点负载进行计算
+                    # 拆分时，返回数组
+                    res = n.fprop(*args)
+
+                    i = 0
+                    q = n.fFirstEdge
+                    # 将计算结果沿着出边向后传递，即分发赋值给所有出边的运载
+                    while q is not None:
+                        q.carry = res[i]
+                        q = q.fNextEdge
+                        i+=1
+                    
+                    # 如果拆分的数量和出边不匹配，则抛出异常
+                    if i != len(res) :
+                        raise PropError('Can not match between both result count of "%s" and count of outgoing edge.' % (n.data.name or n.code))
+                else :
+                    raise PropError('The propagation type of "%s" is error.' % (n.data.name or n.code))
             
             # 去掉图中所有入度为0的点后，会产生新的入度为0的点，继续此步骤直到遍历完所有点
             # 从还未计算的节点中筛选出入度为0的节点
@@ -472,31 +502,54 @@ class ComputationGraph:
 
         while len(s_node) :
             for n in s_node :
-                # 从此节点的入边中获取所有运载
-                # 一般来说，运算符的入边只有一条，只有变量的入边有一或多条，表明此变量在前向计算中发生了分发
-                # 但是没关系，反向传播时变量的每一条入边的运载都是这个变量的偏导
-                # 只需要将所有偏导加起来就是这个这个变量的导数（指代价函数J对变量w的导数dJ/dw）
-                args = None
-                p = n.fFirstEdge
-                while p is not None :
-                    if args is None :
-                        args = p.carry
-                    else :
-                        args += p.carry
-                    # 取得运载后将运载清空，方便后续计算
-                    p.carry = None
-                    p = p.fNextEdge
-                
-                # 将运载投入节点负载计算反向传播，根据不同的负载类型会有一到多个结果
-                res = n.bprop(args)
+                # 分发求导
+                if n.data.prop_type == 0 :
+                    # 从此节点的入边中获取所有运载
+                    # 一般来说，运算符的入边只有一条，只有变量的入边有一或多条，表明此变量在前向计算中发生了分发
+                    # 但是没关系，反向传播时变量的每一条入边的运载都是这个变量的偏导
+                    # 只需要将所有偏导加起来就是这个这个变量的导数（指代价函数J对变量w的导数dJ/dw）
+                    args = None
+                    p = n.fFirstEdge
+                    while p is not None :
+                        if args is None :
+                            args = p.carry
+                        else :
+                            args += p.carry
+                        # 取得运载后将运载清空，方便后续计算
+                        p.carry = None
+                        p = p.fNextEdge
+                    
+                    # 将运载投入节点负载计算反向传播，根据不同的负载类型会有一到多个结果
+                    res = n.bprop(args)
 
-                i = 0
-                q = n.bFirstEdge
-                # 将结果按顺序分发给每一条出边
-                while q is not None:
-                    q.carry = res[i]
-                    q = q.bNextEdge
-                    i += 1
+                    i = 0
+                    q = n.bFirstEdge
+                    # 将结果按顺序分发给每一条出边
+                    while q is not None:
+                        q.carry = res[i]
+                        q = q.bNextEdge
+                        i += 1
+                # 拆分求导
+                elif n.data.prop_type == 1 :
+                    # 如果是拆分求导，那么反向传播传入的则不是当前变量的偏导，而是变量一部分（子张量）的导数，那么这里不做全导求和，而是以数组的形式传给负载
+                    args = []
+                    p = n.fFirstEdge
+                    while p is not None :
+                        args.append(p.carry)
+                        # 取得运载后将运载清空，方便后续计算
+                        p.carry = None
+                        p = p.fNextEdge
+                    
+                    # 将运载投入节点负载计算反向传播，根据不同的负载类型会有一到多个结果
+                    res = n.bprop(args)
+
+                    i = 0
+                    q = n.bFirstEdge
+                    # 将结果按顺序分发给每一条出边
+                    while q is not None:
+                        q.carry = res[i]
+                        q = q.bNextEdge
+                        i += 1
             
             # 去掉图中所有入度为0的点后，会产生新的入度为0的点，继续此步骤直到遍历完所有点
             # 从还未计算的节点中筛选出入度为0的节点
@@ -553,20 +606,39 @@ class ComputationGraph:
                 break
         else :
             raise NodeNotFindError('Can not find node named %s.' % (name))
+    
+    def setGradientClip(self, name:str, clip: float) :
+        """
+        设置变量节点的梯度裁剪
+
+        ### 参数
+        * name : str, 参数名
+        * clip, 梯度裁剪值
+        """
+        for n in self.__nodes :
+            if n.data.name == name :
+                n.data.gradient_clip = clip
+                break
+        else :
+            raise NodeNotFindError('Can not find node named %s.' % (name))
+        
 
     # 十字链表法输出计算图结构
     def __str__ (self) :
         str = "\n"
         for node in self.__nodes :
-            str += "| %s |\t" %(node.code)
+            if hasattr(node.data, 'name') and node.data.name is not None :
+                str += "| %s:%s |\t" %(node.data.name, node.code)
+            else :
+                str += "| %s |\t" %(node.code)
             p = node.fFirstEdge
             while p != None:
-                str += "[->%s] " %(p.fNode.code )
+                str += "[->%s:%s] " %(p.fNode.code, p.fNode.data.name )
                 p = p.fNextEdge
 
             p = node.bFirstEdge
             while p != None:
-                str += "[<-%s] " %(p.bNode.code )
+                str += "[<-%s:%s] " %(p.bNode.code, p.bNode.data.name )
                 p = p.bNextEdge
 
             str += "\n"
@@ -577,13 +649,21 @@ class ComputationGraph:
         """
         表格的方式输出时间开销
         """
-        str = "\n"
-        str += "| code \t | fprop last(s) \t | fprop total(s) \t | bprop last(s) \t | bprop total(s) \t|\n"
+        fl = 0
+        ft = 0
+        bl = 0
+        bt = 0
+        table = ptable(['code', 'fprop last(s)', 'fprop total(s)', 'bprop last(s)', 'bprop total(s)'])
         for node in self.__nodes :
-            str += "| %s \t | %.3f \t | %.3f \t | %.3f \t | %.3f \t |" %(node.code, node.ftimespend, node.ftimetotal, node.btimespend, node.btimetotal)
-            str += "\n"
+            table.add_row(['%s' % node.code, '%.3f' % node.ftimespend, '%.3f' % node.ftimetotal, '%.3f' % node.btimespend, '%.3f' % node.btimetotal])
+            fl += node.ftimespend
+            ft += node.ftimetotal
+            bl += node.btimespend
+            bt += node.btimetotal
         
-        return str
+        table.add_row(['Sum', '%.3f' % fl, '%.3f' % ft, '%.3f' % bl, '%.3f' % bt])
+        
+        return table
     
 
     # 导出计算图数据
@@ -596,4 +676,30 @@ class ComputationGraph:
     def imports(self, value) :
         for i in range(len(value)) :
             self.__nodes[i].imports(value[i])
+    
+    # 以图片的方式显示计算图
+    def show(self) :
+
+        node_attr = dict(
+            style='filled',
+            shape='box',
+            align='top',
+            fontsize='12',
+            ranksep='0.1',
+            height='0.2'
+        )
+        dot = Digraph(node_attr=node_attr, graph_attr=dict(size='12,12'))
+        
+        for node in self.__nodes :
+            if hasattr(node.data, 'name') and node.data.name is not None :
+                dot.node(str(id(node)), "%s:%s" %(node.data.name, node.code))
+            else :
+                dot.node(str(id(node)), "%s" %(node.code))
+
+            p = node.fFirstEdge
+            while p != None:
+                dot.edge(str(id(node)), str(id(p.fNode)))
+                p = p.fNextEdge
+        
+        dot.view()
         

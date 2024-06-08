@@ -4,9 +4,8 @@
 
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import pytest as test
 
 np.set_printoptions(precision=99, suppress=True)

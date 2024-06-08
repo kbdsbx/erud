@@ -28,19 +28,24 @@ from erud.opts.max_pool import max_pool
 from erud.opts.max_pool_v3 import max_pool_v3
 from erud.opts.flatten import flatten
 from erud.opts.L2_regularization import L2_regularization
+from erud.opts.scatter import scatter
+from erud.opts.gather import gather
+from erud.opts.leaky_relu import leaky_relu
+from erud.opts.reshape import reshape
 
 from erud.tensor.var import var
 from erud.tensor.rest import rest
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import re
 
 from erud.opts_extend.accuracy import accuracy
 from erud.opts_extend.threshold import threshold
 from erud.opts_extend.max_index import max_index
+from erud.opts_extend.choise_to_index import choise_to_index
+from erud.opts_extend.yolo1_loss import yolo1_loss
 
 import erud.upf as upf
 
@@ -212,6 +217,10 @@ class nous :
         'max_pool_v3' : max_pool_v3,
         'flatten' : flatten,
         'L2_regularization': L2_regularization,
+        'scatter' : scatter,
+        'gather' : gather,
+        'leaky_relu' : leaky_relu,
+        'reshape' : reshape,
 
         'cross_entropy' : cross_entropy,
         'softmax_cross_entropy' : softmax_cross_entropy,
@@ -220,11 +229,15 @@ class nous :
         'accuracy' : accuracy,
         'threshold' : threshold,
         'max_index' : max_index,
+        'choise_to_index' : choise_to_index,
+        'yolo1_loss' : yolo1_loss,
     }
 
     # 所有语句关键词
     __keywords = [
         'as',
+        '=>',
+        'to',
         'then',
         '->',
         'loop',
@@ -236,6 +249,17 @@ class nous :
     __loop_keywords = [
         'loop',
         '@@'
+    ]
+
+    # 赋值关键词
+    __assign_keywords = [
+        '=>',
+        'to'
+    ]
+
+    # 命名关键词
+    __named_keywords = [
+        'as'
     ]
 
     # 连接关键词
@@ -256,8 +280,9 @@ class nous :
         'randn' : (lambda x : np.random.randn(*x)),
         'ones' : (lambda x : np.ones(tuple(x))),
         'zeros' : (lambda x : np.zeros(tuple(x))),
-        'xavier' : (lambda x : np.random.randn(*x[0]) * np.sqrt(1. / x[1])),
-        'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2. / x[1]))
+        'he' : (lambda x : np.random.randn(*x[0]) * np.sqrt(2. / x[1])),
+        'xavier_cnn' : (lambda x : np.random.randn(*x) * 2. / np.sqrt(x[0] * x[1] * x[2] + x[0] * x[1] * x[3])),
+        'xavier' : (lambda x : np.random.randn(*x) * 2. / np.sqrt(np.sum(list(x)))),
     }
 
     # 可用的更新函数
@@ -305,11 +330,49 @@ class nous :
         else :
             save.append(lst)
         return save
+    
+    # 获取嵌套列表中的第一个值
+    def _getListFirst (self, lst):
+        save = []
+        _temp = []
+        if type(lst) is list :
+            for x in lst:
+                if type(x) is list :
+                    self._flatten(x, _temp)
+                    save.append(_temp[0])
+                    _temp = []
+                else :
+                    save.append(x)
+        else :
+            save.append(lst)
+        
+        return save
+    
+    # 获取嵌套列表中的最后一个
+    def _getListLast(self, lst) :
+        save = []
+        _temp = []
+        if type(lst) is list :
+            for x in lst :
+                if type(x) is list :
+                    self._flatten(x, _temp)
+                    save.append(_temp[-1])
+                    _temp = []
+                else :
+                    save.append(x)
+        else :
+            save.append(lst)
+        
+        return save
 
     # 将节点插入图
     def _insert(self, node, g:graph) :
+        # 旧的方法把深度列表拉平成一个列表
         _nodes = []
         _nodes = self._flatten(node, _nodes)
+        # 新的方法只处理列表当前深度的第一个值
+        # _nodes = self._getListFirst(node)
+
 
         if not isinstance(_nodes, list) :
             _nodes = [_nodes]
@@ -383,7 +446,7 @@ class nous :
         
         el = el.strip()
         rest_str = rest_str.strip()
-        
+
         # 去掉外层多余小括号
         # el = self._stripBrackets(el)
         
@@ -447,10 +510,12 @@ class nous :
         
         if el in self.__operators.keys() :
             return False
+
+        name = el.split(":")
         
         # 在计算图所有节点中寻找同名节点
         for n in g.nodes :
-            if n.data.name == el :
+            if n.data.name == name[0].strip() :
                 return True
         else :
             return False
@@ -462,9 +527,11 @@ class nous :
     def _getReference(self, el:str, g:graph) -> node :
         if not self._isReference(el, g) :
             raise ParseError('Can not find node named "%s" in computation graph.' % (el))
-        
+
+        name = el.split(":")
+
         for n in g.nodes :
-            if n.data.name == el :
+            if n.data.name == name[0].strip() :
                 return n
     
 
@@ -841,7 +908,10 @@ class nous :
             if self._isBlock(el) :
                 el = el.strip()
                 # 处理子块时，需要去掉外层小括号
-                el = self._stripBrackets(el)
+                # 如果块为整块，则去掉小括号，否则视为多个块的拼接，不去掉小括号
+                _b, _rst = self._getNextBlock(el)
+                if _rst == '' :
+                    el = self._stripBrackets(el)
                 # 递归调用块处理逻辑来处理子块
                 # 子块位于首部，则此块源点是子块的源点
                 if left is None and first is None:
@@ -855,6 +925,8 @@ class nous :
                     opt, _ = self._processSection(el, g)
                     if left is not None :
                         self._link(left, opt, g)
+                    # 汇点为每一个子块的最后一个节点
+                    # todo : change _ as last node of each block
                     left = _
                     opt = None
                     right = None
@@ -945,13 +1017,63 @@ class nous :
                 else :
                     raise ParseError('Can not arrange two variables (%s, %s) in one place.' % (right.code, el))
             
+            # 赋值关键词
+            # 将之前的表达式的值保存在一个变量里
+            elif el in self.__assign_keywords :
+                oel = el
+                el, rest_str = self._getNextEl(rest_str)
+
+                if not self._isVariable(el):
+                    raise ParseError('Only variable can be assigned by "%s".' % (oel))
+                
+                v = None
+                if self._isReference(el, g) :
+                    v = self._getReference(el, g)
+                else :
+                    v = self._makeVariable(el)
+                
+                # v0.3赋值操作符可以出现在子块首部
+                if left is None and first is None:
+                    left = v
+                    first = left
+                    # raise ParseError('Keyword "%s" before all of statements is mistake.' % (el))
+                elif opt is None :
+                    opt = v
+                    if left is not None :
+                        self._link(left, opt, g)
+                    
+                    left = opt
+                    opt = None
+                    right = None
+                
+                elif right is None :
+                    if left is not None :
+                        self._link(left, opt, g)
+                    self._link(opt, v, g)
+                    left = v
+                    opt = None
+                    right = None
+                else :
+                    if left is not None :
+                        self._link(left, opt, g)
+                    if right is not None :
+                        self._link(right, opt, g)
+                    self._link(opt, v, g)
+                    left = v
+                    opt = None
+                    right = None
+
+
+
+            
             # 对操作符命名
-            elif el == 'as' :
+            elif el in self.__named_keywords :
+                oel = el
                 # 获取下一个元素
                 el, rest_str = self._getNextEl(rest_str)
 
                 if opt is None :
-                    raise ParseError('Only operator can be named by "as".')
+                    raise ParseError('Only operator can be named by "%s".' % (oel))
                 
                 # 非法的命名
                 if not self._isName(el) :
@@ -971,7 +1093,7 @@ class nous :
             elif el in self.__link_keywords :
                 # 层连接符不能放在表达式首部
                 if left is None and first is None:
-                    raise ParseError('Liner "%s" before all of statements is mistake.' % (el))
+                    raise ParseError('Keyword "%s" before all of statements is mistake.' % (el))
                 
                 # 操作符不为空，则构建此层，此层的操作符成为下一层的左操作数
                 elif opt is not None :
@@ -1090,13 +1212,25 @@ class nous :
         block, rest_str = self._getNextBlock(rest_str)
 
         while block:
-            sou, foc = self._processBlock(block, g)
+            # 如果block已经是一个无法分割的块，则调用块处理
+            _b, _rst = self._getNextBlock(block)
+            if _rst == '' :
+                sou, foc = self._processBlock(block, g)
+            # 否则继续调用句子处理
+            else :
+                sou, foc = self._processSection(block, g)
+
             sources.append(sou)
             focus.append(foc)
+
             block, rest_str = self._getNextBlock(rest_str)
         
 
         # todo 收集完所有子图的源点和汇点后，对每个源点和汇点进行二次检查，后续处理的子图中对先前处理的子图中的点进行连接，导致先前子图中的汇点不再是汇点，找出这些点并排除
+        # 源为列表中的第一个元素，无论这个元素嵌套有多深
+        # 汇为列表中的最后一个元素，无论这个元素嵌套有多深
+        sources = self._getListFirst(sources)
+        focus = self._getListLast(focus)
 
         return sources, focus
 
@@ -1128,9 +1262,10 @@ class nous :
         # 遍历循环变量，计算并替换源码中所有尖括号<>中的值
         for i in loop_range :
             cp_el = self._replaceAndTryCompute(el, variable, i)
-            new_el += cp_el + "\n"
+            new_el +='(' + cp_el + ")\n"
         
         new_el = "(" + new_el + ")"
+        # print(new_el + ' ' + rest_str.strip())
         return new_el + ' ' + rest_str.strip()
 
     # 将由尖括号`<>`中包裹的代码中的变量`name`替换成对应的值`value`

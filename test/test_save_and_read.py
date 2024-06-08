@@ -2,9 +2,8 @@ import erud
 import os
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import pytest as test
 
 def test_exports_from_nous() :
@@ -15,13 +14,13 @@ def test_exports_from_nous() :
 
             ##### 一层卷积
             ##### (1080, 64, 64, 3) -> (1080, 64, 64, 8) -> (1080, 8, 8, 8)
-            conv2d(1, 2) W1:xavier((4, 4, 3, 8), 16):norm(0.66) -> relu -> max_pool(8, 8, 8) ->
+            conv2d(1, 2) W1:xavier_cnn(4, 4, 3, 8):norm(0.66) -> relu -> max_pool(8, 8, 8) ->
             ##### 二层卷积
             ##### (1080, 8, 8, 8) -> (1080, 8, 8, 16) -> (1080, 2, 2, 16)
-            conv2d(1, 1) W2:xavier((2, 2, 8, 16), 4):adam(0.99) -> relu -> max_pool(4, 4, 4) ->
+            conv2d(1, 1) W2:xavier_cnn(2, 2, 8, 16):adam(0.99) -> relu -> max_pool(4, 4, 4) ->
 
             ##### 全连接
-            flatten -> matmul W3:xavier((64, 6), 64) add b3:(6) ->
+            flatten -> matmul W3:xavier(64, 6) add b3:(6) ->
 
         softmax_cross_entropy(1) Y -> cost -> J:$$
         '''

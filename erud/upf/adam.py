@@ -1,8 +1,7 @@
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 from erud._utils import epsilon as eps
 from erud.upf.updateable import updateable
 

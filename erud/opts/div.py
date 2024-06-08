@@ -2,9 +2,8 @@ from erud.cg.payload import payload
 from erud.opts._utils import partial_sum
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class div (payload) :
     # 缓存

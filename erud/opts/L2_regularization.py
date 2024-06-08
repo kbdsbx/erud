@@ -2,9 +2,8 @@ from erud.cg.payload import payload
 from erud._utils import useGPU
 
 if useGPU :
-	import cupy as np
-else :
-	import numpy as np
+	import cupy as cp
+import numpy as np
 
 # lambda/(m * 2) * (sum(W1^2) + sum(W2^2) + ... + sum(Wn^2))
 class L2_regularization(payload) :

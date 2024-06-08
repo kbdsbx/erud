@@ -1,9 +1,8 @@
 from erud.opts.conv2d_v3 import conv2d_v3
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class conv2d_v3_same (conv2d_v3) :
 

@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 class dropout (payload) :
     # 掩层
@@ -28,5 +27,5 @@ class dropout (payload) :
 
         dx = dz * _mash / _posi
 
-        return [dx, 0.]
+        return [dx]
 

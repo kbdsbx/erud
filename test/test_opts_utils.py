@@ -1,9 +1,8 @@
 from erud.opts._utils import broadcast_axis
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 import pytest as test
 
 def test_broadcast_axis () :

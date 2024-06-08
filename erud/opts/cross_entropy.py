@@ -1,9 +1,8 @@
 from erud.cg.payload import payload
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 from erud._utils import epsilon as eps
 
 # 交叉熵损失函数
@@ -25,11 +24,6 @@ class cross_entropy(payload) :
         _yhat = self.__yhat
         _y = self.__y
         
-        # # 防止上溢
-        # _yhat -= ((_yhat == np.ones_like(_yhat)) * np.finfo(np.float64).eps)
-        # # 防止下溢
-        # _yhat += ((_yhat == np.zeros_like(_yhat)) * np.finfo(np.float64).eps)
-
         if np.any(_yhat <= 0) :
             print(_yhat)
 

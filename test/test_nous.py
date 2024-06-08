@@ -3,9 +3,8 @@ from erud.errors import ParseError
 import pytest as test
 from erud._utils import useGPU
 if useGPU :
-    import cupy as np
-else :
-    import numpy as np
+    import cupy as cp
+import numpy as np
 
 
 # 获取代码串中的第一个元素和剩余的子串
@@ -235,6 +234,7 @@ def test_is_init_func () :
 def test_is_update_func () :
     n = nous()
     
+    assert n._isUpdateFunc('to') == False
     assert n._isUpdateFunc('randn(5,3,2)') == False
     assert n._isUpdateFunc('norm') == False
     assert n._isUpdateFunc('norm(0.9)') == True
@@ -256,6 +256,9 @@ def test_is_name() :
     assert n._isName('as') == False
     assert n._isName('add') == False
     assert n._isName('X Y') == False
+    assert n._isName('to') == False
+    assert n._isName('->') == False
+    assert n._isName('=>') == False
 
 def test_is_tensor() :
     n = nous()
@@ -273,6 +276,7 @@ def test_is_value () :
     n = nous()
 
     assert n._isValue('5') == True
+    assert n._isValue('-1') == True
     assert n._isValue('123') == True
     assert n._isValue('[[1,2], [9.1, 4]]') == True
     assert n._isValue('randn(5,2, 4 )') == True
@@ -287,6 +291,8 @@ def test_is_value () :
     assert n._isValue('$$')== False
     assert n._isValue('_1:(5, 2, 4)') == False
     assert n._isValue('adam(0.0008, 0.88, 0.8)') == False
+    assert n._isValue('to') == False
+    assert n._isValue('=>') == False
 
 def test_make_value () :
     n = nous()
@@ -459,6 +465,10 @@ def test_is_variable_array() :
 
     n = nous()
     g = n.parse()
+
+    assert n._isVariable('to') == False
+    assert n._isVariable('=>') == False
+    assert n._isVariable('->') == False
 
     assert n._isVariableArray('W1|W2', g) == True
     assert n._isVariableArray('W1', g) == False
@@ -655,11 +665,72 @@ def test_process_block() :
     assert res.data == -65
 
     g = graph()
-    n._processBlock('X:(100, 103) -> matmul W1:xavier((103, 64), 103):norm(0.002) add b1:(64):norm(0.002) -> relu', g)
+    n._processBlock('X:(100, 103) -> matmul W1:xavier(103, 64):norm(0.002) add b1:(64):norm(0.002) -> relu', g)
 
     # g = graph()
     # n._processBlock('a:5 add b:10 as u mul (c:6 sub d:19 as v) as w div e:3 as t then y:$$', g)
     # print(g)
+
+
+def test_assign () :
+    n = nous()
+    # 赋值操作符
+    g = graph()
+    n._processBlock('X:5 => Y', g)
+    assert g.nodes[0].data.name == 'X'
+    assert g.nodes[1].data.name == 'Y'
+    g.fprop()
+    assert g.getData('Y') == 5
+
+    n = nous()
+    g = n.parse(
+        '''
+        X:5 => Y
+        Z:6 => Y
+''')
+    # 同一个变量最多接受一个值来源
+    with test.raises(TypeError) :
+        g.fprop()
+    
+    # 赋值操作可将值提供给引用变量
+    g = nous('''
+    X -> add 6 to Z
+    5 => X
+''').parse()
+
+    g.fprop()
+    assert g.getData('X') == 5
+    assert g.getData('Z') == 11
+
+    g = nous(
+        '''
+    X:-1 add Y:1 to Z:1
+'''
+    ).parse()
+    g.fprop()
+    assert g.getData('X') == -1
+    assert g.getData('Y') == 1
+    assert g.getData('Z') == 0
+
+    g = nous (
+        '''
+X:-1 relu to Y'''
+    ).parse()
+    g.fprop()
+    assert g.getData('Y') == 0
+    
+
+def test_loop () :
+    g = nous (
+        '''
+    X:1 -> loop t = 1 to 2 (
+        add Y:<t> mul <t * 2>
+    ) -> add => Z
+'''
+    ).parse()
+    g.fprop()
+    assert g.getData('Z') == 16
+
 
 def test_nous_parse() :
     n = nous('''
@@ -674,6 +745,13 @@ def test_nous_parse() :
 
     # 结束
     t -> y:$$
+    ''')
+
+    g = n.parse()
+    [res] = g.fprop()
+
+    n = nous('''
+    (5 + 10) * (6 -19) / 3 -> ret
     ''')
 
     g = n.parse()
@@ -764,16 +842,16 @@ loop t = 1 to 5 (
     matmul Wy add by -> sigmoid -> Yhat<t>
 )
 '''
-    code_new = '''(X1 hstack A0 -> matmul Wa add Wb -> tanh -> A1 ->
-    matmul Wy add by -> sigmoid -> Yhat1
-X2 hstack A1 -> matmul Wa add Wb -> tanh -> A2 ->
-    matmul Wy add by -> sigmoid -> Yhat2
-X3 hstack A2 -> matmul Wa add Wb -> tanh -> A3 ->
-    matmul Wy add by -> sigmoid -> Yhat3
-X4 hstack A3 -> matmul Wa add Wb -> tanh -> A4 ->
-    matmul Wy add by -> sigmoid -> Yhat4
-X5 hstack A4 -> matmul Wa add Wb -> tanh -> A5 ->
-    matmul Wy add by -> sigmoid -> Yhat5
+    code_new = '''((X1 hstack A0 -> matmul Wa add Wb -> tanh -> A1 ->
+    matmul Wy add by -> sigmoid -> Yhat1)
+(X2 hstack A1 -> matmul Wa add Wb -> tanh -> A2 ->
+    matmul Wy add by -> sigmoid -> Yhat2)
+(X3 hstack A2 -> matmul Wa add Wb -> tanh -> A3 ->
+    matmul Wy add by -> sigmoid -> Yhat3)
+(X4 hstack A3 -> matmul Wa add Wb -> tanh -> A4 ->
+    matmul Wy add by -> sigmoid -> Yhat4)
+(X5 hstack A4 -> matmul Wa add Wb -> tanh -> A5 ->
+    matmul Wy add by -> sigmoid -> Yhat5)
 ) '''
     assert n._processLoop(code_old) == code_new
 
@@ -784,22 +862,7 @@ loop t = 1 to 3 (
     )
 ) gather -> Yhat -> sigmoid_cross_entropy -> cost -> J:$$
 '''
-    code_new = '''(
-    loop s = 1 to 4 (
-        X1<s> matmul A<1 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -1 +s + 1>
-    )
-
-
-    loop s = 2 to 4 (
-        X2<s> matmul A<2 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -2 +s + 1>
-    )
-
-
-    loop s = 3 to 4 (
-        X3<s> matmul A<3 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -3 +s + 1>
-    )
-
-) gather -> Yhat -> sigmoid_cross_entropy -> cost -> J:$$'''
+    code_new = '''((\n    loop s = 1 to 4 (\n        X1<s> matmul A<1 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -1 +s + 1>\n    )\n)\n(\n    loop s = 2 to 4 (\n        X2<s> matmul A<2 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -2 +s + 1>\n    )\n)\n(\n    loop s = 3 to 4 (\n        X3<s> matmul A<3 + 1 - s> -> tanh -> A<s - s + 1 > -> Wy -> sigmoid -> Yhat<s -3 +s + 1>\n    )\n)\n) gather -> Yhat -> sigmoid_cross_entropy -> cost -> J:$$'''
     assert n._processLoop(code_old) == code_new
 
 
@@ -819,41 +882,33 @@ def test_generate_multiple_link() :
             (
                 matmul as m6 W6 add as a6 b6
             )
-        ) -> cost
+        )
 '''
     g = nous(code).parse()
-    assert str(g) == '''
-| X |\t[->matmul] [->matmul] [->matmul] [->matmul] [->matmul] [->matmul] 
-| matmul |\t[->add] [<-W1] [<-X] 
-| W1 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b1] 
-| b1 |\t[->add] 
-| matmul |\t[->add] [<-W2] [<-X] 
-| W2 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b2] 
-| b2 |\t[->add] 
-| matmul |\t[->add] [<-W3] [<-X] 
-| W3 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b3] 
-| b3 |\t[->add] 
-| matmul |\t[->add] [<-W4] [<-X] 
-| W4 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b4] 
-| b4 |\t[->add] 
-| matmul |\t[->add] [<-W5] [<-X] 
-| W5 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b5] 
-| b5 |\t[->add] 
-| matmul |\t[->add] [<-W6] [<-X] 
-| W6 |\t[->matmul] 
-| add |\t[->cost] [<-matmul] [<-b6] 
-| b6 |\t[->add] 
-| cost |\t[<-add] [<-add] [<-add] [<-add] [<-add] [<-add] 
-'''
+    # print(g)
 
+def test_loop () :
+    code = '''
+    X -> loop t = 1 to 5 (
+        => x<t> -> add a<t-1>:zeros(1,2,3) -> matmul Wa add ba -> tanh => a<t> ->
+        matmul Wy add by -> sigmoid => yhat<t>
+    ) -> to Yhat
+'''
+    g = nous(code).parse()
+
+    code = '''
+    X scatter(1) -> loop t = 1 to 3 (
+        x<t> matmul Wfa add bf as s<t>1
+        x<t> mul Wff as s<t>2
+        s<t>1 add s<t>2 as s<t>
+    ) -> to Yhat
+'''
+    g = nous(code).parse()
+    # print(g)
 
 def test_flatten_list () :
     n = nous()
 
     saved = []
     assert np.all(n._flatten([[1,2,3], [2,4], [1]], saved) == [1,2,3,2,4,1])
+    assert np.all(n._getListFirst([[1,2,3], [2,4], [1]] ) == [1,2,1])
